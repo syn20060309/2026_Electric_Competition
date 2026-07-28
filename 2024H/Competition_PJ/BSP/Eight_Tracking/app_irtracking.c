@@ -168,9 +168,9 @@ void LineWalking(void)
 	deal_IRdata(&x1,&x2,&x3,&x4,&x5,&x6,&x7,&x8);
 	
 	//debug
-//	static char bufbuf[30]={'\0'};
-//	sprintf(bufbuf,"%d\t %d\t %d\t %d\t %d\t %d\t %d\t %d\t \r\n",x1,x2,x3,x4,x5,x6,x7,x8);
-//	uart0_send_string((char*)bufbuf);
+	static char bufbuf[30]={'\0'};
+	sprintf(bufbuf,"%d\t %d\t %d\t %d\t %d\t %d\t %d\t %d\t \r\n",x1,x2,x3,x4,x5,x6,x7,x8);
+	uart0_send_string((char*)bufbuf);
 	
     //сеохеп╤о	Priority judgment
 //	if((x1 == 0 && x2 == 0 && x3 == 0) || 

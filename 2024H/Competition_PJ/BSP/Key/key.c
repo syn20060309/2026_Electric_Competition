@@ -2,7 +2,7 @@
 
 extern int g_LinePortal_flag;
 
-// ∂®“Â∞¥º¸æ‰±˙ - Define key handle
+// ÂÆö‰πâÊåâÈîÆÂè•ÊüÑ - Define key handle
 Key_t key1 = {
     .GPIOx = KEY_PORT,
     .GPIO_Pin = KEY_K1_PIN,
@@ -12,18 +12,18 @@ Key_t key1 = {
 };
 
 
-/* œ˚∂∂ ±º‰£®µ•Œª£∫ms£© - Debounce time (ms) */
-#define DEBOUNCE_DELAY 20  // µ‰–Õ÷µ£∫10-50ms / Typical value: 10-50ms
+/* Ê∂àÊäñÊó∂Èó¥ÔºàÂçï‰ΩçÔºömsÔºâ - Debounce time (ms) */
+#define DEBOUNCE_DELAY 20  // ÂÖ∏ÂûãÂÄºÔºö10-50ms / Typical value: 10-50ms
 
 /**
- * @brief ∞¥º¸…®√Ë∫Ø ˝£®∑«◊Ë»˚ Ω£© - Key scan function (non-blocking)
- * @param key         ∞¥º¸æ‰±˙÷∏’Î / Pointer to KeyHandle
- * @param currentTime µ±«∞œµÕ≥ ±º‰£®µ•Œª£∫ms£© / Current system time (ms)
- * @param longPressThreshold ≥§∞¥ ±º‰„–÷µ£®µ•Œª£∫ms£© / Long press threshold (ms)
- * @return KeyEvent   ∑µªÿ∞¥º¸ ¬º˛ / Returns key event
+ * @brief ÊåâÈîÆÊâ´ÊèèÂáΩÊï∞ÔºàÈùûÈòªÂ°ûÂºèÔºâ - Key scan function (non-blocking)
+ * @param key         ÊåâÈîÆÂè•ÊüÑÊåáÈíà / Pointer to KeyHandle
+ * @param currentTime ÂΩìÂâçÁ≥ªÁªüÊó∂Èó¥ÔºàÂçï‰ΩçÔºömsÔºâ / Current system time (ms)
+ * @param longPressThreshold ÈïøÊåâÊó∂Èó¥ÈòàÂÄºÔºàÂçï‰ΩçÔºömsÔºâ / Long press threshold (ms)
+ * @return KeyEvent   ËøîÂõûÊåâÈîÆ‰∫ã‰ª∂ / Returns key event
  */
 KeyEvent Key_Scan(Key_t* key, uint32_t currentTime, uint32_t longPressThreshold) {
-    // ∂¡»°∞¥º¸µÁ∆Ω£∫0±Ì æ∞¥œ¬£¨1±Ì æ Õ∑≈ / Read pin level: 0=pressed, 1=released
+    // ËØªÂèñÊåâÈîÆÁîµÂπ≥Ôºö0Ë°®Á§∫Êåâ‰∏ãÔºå1Ë°®Á§∫ÈáäÊîæ / Read pin level: 0=pressed, 1=released
     uint8_t isPressed = 0;
     
     if(DL_GPIO_readPins(key->GPIOx, key->GPIO_Pin) == 0)
@@ -32,57 +32,57 @@ KeyEvent Key_Scan(Key_t* key, uint32_t currentTime, uint32_t longPressThreshold)
     }
     
     switch (key->state) {
-        /* ◊¥Ã¨1£∫∞¥º¸ Õ∑≈ - State 1: Key released */
+        /* Áä∂ÊÄÅ1ÔºöÊåâÈîÆÈáäÊîæ - State 1: Key released */
         case KEY_STATE_RELEASED:
             if (isPressed) {
-                key->state = KEY_STATE_DEBOUNCE;       // Ω¯»Îœ˚∂∂◊¥Ã¨ / Enter debounce state
-                key->debounceTime = currentTime;      // º«¬ºœ˚∂∂ø™ º ±º‰ / Record debounce start time
+                key->state = KEY_STATE_DEBOUNCE;       // ËøõÂÖ•Ê∂àÊäñÁä∂ÊÄÅ / Enter debounce state
+                key->debounceTime = currentTime;      // ËÆ∞ÂΩïÊ∂àÊäñÂºÄÂßãÊó∂Èó¥ / Record debounce start time
             }
             break;
 
-        /* ◊¥Ã¨2£∫œ˚∂∂ºÏ≤‚ - State 2: Debounce checking */
+        /* Áä∂ÊÄÅ2ÔºöÊ∂àÊäñÊ£ÄÊµã - State 2: Debounce checking */
         case KEY_STATE_DEBOUNCE:
-            // œ˚∂∂ ±º‰µΩ¥Ô∫ÛºÏ≤‚Œ»∂®◊¥Ã¨ / Check stable state after debounce delay
+            // Ê∂àÊäñÊó∂Èó¥Âà∞ËææÂêéÊ£ÄÊµãÁ®≥ÂÆöÁä∂ÊÄÅ / Check stable state after debounce delay
             if (currentTime - key->debounceTime >= DEBOUNCE_DELAY) {
                 if (isPressed) {
-                    key->state = KEY_STATE_PRESSED;    // »∑»œ∞¥œ¬ / Confirm press
-                    key->pressTime = currentTime;      // º«¬º∞¥œ¬ ±º‰ / Record press time
+                    key->state = KEY_STATE_PRESSED;    // Á°ÆËÆ§Êåâ‰∏ã / Confirm press
+                    key->pressTime = currentTime;      // ËÆ∞ÂΩïÊåâ‰∏ãÊó∂Èó¥ / Record press time
                 } else {
-                    key->state = KEY_STATE_RELEASED;   // ∂∂∂ØŒÛ¥•∑¢ / False trigger due to bounce
+                    key->state = KEY_STATE_RELEASED;   // ÊäñÂä®ËØØËß¶Âèë / False trigger due to bounce
                 }
             }
             break;
 
-        /* ◊¥Ã¨3£∫“—∞¥œ¬ - State 3: Pressed */
+        /* Áä∂ÊÄÅ3ÔºöÂ∑≤Êåâ‰∏ã - State 3: Pressed */
         case KEY_STATE_PRESSED:
             if (!isPressed) {
-                key->state = KEY_STATE_RELEASED;       //  Õ∑≈¥•∑¢∂Ã∞¥ / Release triggers short press
-                return KEY_EVENT_SHORT;                // ∑µªÿ∂Ã∞¥ ¬º˛ / Return short press event
+                key->state = KEY_STATE_RELEASED;       // ÈáäÊîæËß¶ÂèëÁü≠Êåâ / Release triggers short press
+                return KEY_EVENT_SHORT;                // ËøîÂõûÁü≠Êåâ‰∫ã‰ª∂ / Return short press event
             } else if (currentTime - key->pressTime >= longPressThreshold) {
-                key->state = KEY_STATE_LONG;           // ¥•∑¢≥§∞¥ / Trigger long press
-                return KEY_EVENT_LONG;                 // ∑µªÿ≥§∞¥ ¬º˛ / Return long press event
+                key->state = KEY_STATE_LONG;           // Ëß¶ÂèëÈïøÊåâ / Trigger long press
+                return KEY_EVENT_LONG;                 // ËøîÂõûÈïøÊåâ‰∫ã‰ª∂ / Return long press event
             }
             break;
 
-        /* ◊¥Ã¨4£∫≥§∞¥“—¥•∑¢ - State 4: Long press triggered */
+        /* Áä∂ÊÄÅ4ÔºöÈïøÊåâÂ∑≤Ëß¶Âèë - State 4: Long press triggered */
         case KEY_STATE_LONG:
             if (!isPressed) {
-                key->state = KEY_STATE_RELEASED;       //  Õ∑≈∫Û÷ÿ÷√◊¥Ã¨ / Reset state after release
+                key->state = KEY_STATE_RELEASED;       // ÈáäÊîæÂêéÈáçÁΩÆÁä∂ÊÄÅ / Reset state after release
             }
             break;
     }
 
-    return KEY_EVENT_NONE;  // ƒ¨»œŒﬁ ¬º˛ / Default: no event
+    return KEY_EVENT_NONE;  // ÈªòËÆ§Êó†‰∫ã‰ª∂ / Default: no event
 }
 
 void Key_Handle(void)
 {
-    int16_t LongPressThreshold = 700;// ∞¥º¸…®√Ë ±≥§∞¥µƒ„–÷µ£∫500ms    Threshold for long press during key scanning: 500ms
-    static uint32_t lastTick = 0;  // ≥ı º ±º‰  initial time
+    int16_t LongPressThreshold = 700;// ÊåâÈîÆÊâ´ÊèèÊó∂ÈïøÊåâÁöÑÈòàÂÄºÔºö500ms    Threshold for long press during key scanning: 500ms
+    static uint32_t lastTick = 0;  // ÂàùÂßãÊó∂Èó¥  initial time
     uint32_t currentTick = Get_Time();
     static int task_flag = 1;
 
-    // √ø10msºÏ≤‚“ª¥Œ∞¥º¸ - Check key every 10ms
+    // ÊØè10msÊ£ÄÊµã‰∏ÄÊ¨°ÊåâÈîÆ - Check key every 10ms
     if (currentTick - lastTick >= 10) {
         lastTick = currentTick;
 
@@ -90,29 +90,29 @@ void Key_Handle(void)
 
         switch (event) {
             case KEY_EVENT_SHORT:
-                // ¥¶¿Ì∂Ã∞¥ Handle short press
-//                printf("short press\r\n");
+                // Â§ÑÁêÜÁü≠Êåâ Handle short press
+                printf("short press\r\n");
                 g_LinePortal_flag = 1;
                 bee_time = 500;
                 break;
             case KEY_EVENT_LONG:
                 Contrl_Pwm(0,0,0,0);
                 g_LinePortal_flag = 0;
-                // ¥¶¿Ì≥§∞¥ Handle long press
+                // Â§ÑÁêÜÈïøÊåâ Handle long press
                 switch(task_flag)
                 {
                     case 1:
                     {   
-//                        printf("Task1");
+                        printf("Task1");
                         State_Machine.Main_State = QUESTION_1;
                         task_flag +=1;
                         Beep_Times(1);
-//                        printf("Hanshu:State_Machine.Main_State = %d\r\n",State_Machine.Main_State);
+                        printf("Hanshu:State_Machine.Main_State = %d\r\n",State_Machine.Main_State);
                         break;
                     }
                     case 2:
                     {   
-//                        printf("Task2");
+                        printf("Task2");
                         State_Machine.Main_State = QUESTION_2;
                         task_flag +=1;
                         Beep_Times(2);
@@ -120,7 +120,7 @@ void Key_Handle(void)
                     }
                     case 3:
                     {   
-//                        printf("Task3");
+                        printf("Task3");
                         State_Machine.Main_State = QUESTION_3;
                         task_flag +=1;
                         Beep_Times(3);
@@ -128,7 +128,7 @@ void Key_Handle(void)
                     }
                     case 4:
                     {   
-//                        printf("Task4");
+                        printf("Task4");
                         State_Machine.Main_State = QUESTION_4;
                         task_flag =1;
                         Beep_Times(4);

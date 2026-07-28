@@ -110,7 +110,7 @@ void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)
     if (speed_R2_setup > 1000) speed_R2_setup = 1000;
     if (speed_R2_setup < -1000) speed_R2_setup = -1000;
     
-    //printf("%d\t,%d\t,%d\t,%d\r\n",speed_L1_setup,speed_L2_setup,speed_R1_setup,speed_R2_setup);
+    printf("%d\t,%d\t,%d\t,%d\r\n",speed_L1_setup,speed_L2_setup,speed_R1_setup,speed_R2_setup);
     
     Contrl_Speed(0, speed_L2_setup, 0, speed_R2_setup);
 		
@@ -147,7 +147,7 @@ void Get_Odometry(void)
 		average_speed = ((g_Speed[1] + g_Speed[3]) / 2);  //mm/s
 		odometry_sum+=average_speed;     //mm
     //odometry_sum += ((Encoder_Offset[0] + Encoder_Offset[1] + Encoder_Offset[2] + Encoder_Offset[3]) / 4);
-		//	printf("%f  ",odometry_sum);
+			printf("%d  ",odometry_sum);
     }
 }
 
