@@ -72,12 +72,25 @@ uint32_t RaceTimer_GetElapsedMs(void);
 bool RaceTimer_IsRunning(void);
 ```
 
-The module stores a start timestamp, a frozen elapsed value, and a running
-flag. `RaceTimer_Start()` records `Get_Time()`, clears elapsed time, and marks
-the timer running. `RaceTimer_Stop()` captures the unsigned difference between
-the current tick and start tick before clearing the running flag.
+The module stores a start timestamp, a frozen elapsed value, and an explicit
+state:
+
+```c
+typedef enum {
+    RACE_TIMER_IDLE,
+    RACE_TIMER_RUNNING,
+    RACE_TIMER_STOPPED
+} RaceTimerState;
+```
+
+`RaceTimer_Start()` records `Get_Time()`, clears elapsed time, and changes the
+state to `RACE_TIMER_RUNNING`. `RaceTimer_Stop()` captures the unsigned
+difference between the current tick and start tick before changing the state
+to `RACE_TIMER_STOPPED`; stopping while idle has no effect.
 `RaceTimer_GetElapsedMs()` returns the current unsigned difference while
-running and the captured value while stopped.
+running and the captured value while stopped. `RaceTimer_GetState()` exposes
+the three states so the UI can distinguish power-on idle from a completed
+manual run.
 
 In the existing `KEY_EVENT_SHORT` / `KEY_EVENT_LONG` branch, first toggle
 `g_LinePortal_flag`, then:
