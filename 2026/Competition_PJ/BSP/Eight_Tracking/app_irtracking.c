@@ -3,7 +3,7 @@
 #define IRTrack_Trun_KP (250)
 #define IRTrack_Trun_KI (0.2) 
 #define IRTrack_Trun_KD (2) 
-#define IRR_SPEED 			  300  //巡线速度   Patrol speed
+#define IRR_SPEED 			  400  //巡线速度   Patrol speed
 #define CHANGE_THRESHOLD 3
 const float pid_out_max = 5000.0f; 
 const float Integral_max = 500.0f; // 积分限幅值 
