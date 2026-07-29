@@ -1,9 +1,12 @@
 #include "lap_finish.h"
 
+#include "tracking_sample.h"
+
 static LapFinish_State lap_state = LAP_STATE_IDLE;
 static bool clear_candidate_active;
 static uint32_t clear_candidate_start_ms;
 static bool start_line_cleared;
+static uint8_t finish_confirm_count;
 
 void LapFinish_Init(void)
 {
@@ -16,6 +19,7 @@ void LapFinish_Reset(void)
     clear_candidate_active = false;
     clear_candidate_start_ms = 0U;
     start_line_cleared = false;
+    finish_confirm_count = 0U;
 }
 
 void LapFinish_Start(uint32_t now_ms)
@@ -24,6 +28,7 @@ void LapFinish_Start(uint32_t now_ms)
     clear_candidate_active = false;
     clear_candidate_start_ms = now_ms;
     start_line_cleared = false;
+    finish_confirm_count = 0U;
 }
 
 bool LapFinish_CheckTimeout(uint32_t elapsed_ms)
@@ -41,6 +46,8 @@ bool LapFinish_CheckTimeout(uint32_t elapsed_ms)
 LapFinish_Event LapFinish_Update(uint32_t now_ms, uint32_t elapsed_ms,
     bool sensor_data_valid, uint8_t active_mask)
 {
+    uint8_t active_count;
+
     if ((lap_state != LAP_STATE_LEAVING_START) &&
         (lap_state != LAP_STATE_RUNNING)) {
         return LAP_FINISH_EVENT_NONE;
@@ -50,11 +57,16 @@ LapFinish_Event LapFinish_Update(uint32_t now_ms, uint32_t elapsed_ms,
         if (lap_state == LAP_STATE_LEAVING_START) {
             clear_candidate_active = false;
         }
+        finish_confirm_count = 0U;
         return LAP_FINISH_EVENT_NONE;
     }
 
+    active_count = Tracking_CountActive(active_mask);
+
     if (lap_state == LAP_STATE_LEAVING_START) {
-        if (active_mask == FINISH_ALL_ACTIVE_MASK) {
+        finish_confirm_count = 0U;
+
+        if (active_count >= FINISH_ACTIVE_COUNT_THRESHOLD) {
             clear_candidate_active = false;
             return LAP_FINISH_EVENT_NONE;
         }
@@ -71,9 +83,21 @@ LapFinish_Event LapFinish_Update(uint32_t now_ms, uint32_t elapsed_ms,
         return LAP_FINISH_EVENT_NONE;
     }
 
-    if (start_line_cleared &&
-        (elapsed_ms >= FINISH_MIN_TIME_MS) &&
-        (active_mask == FINISH_ALL_ACTIVE_MASK)) {
+    if (!start_line_cleared || (elapsed_ms < FINISH_MIN_TIME_MS)) {
+        finish_confirm_count = 0U;
+        return LAP_FINISH_EVENT_NONE;
+    }
+
+    if (active_count < FINISH_ACTIVE_COUNT_THRESHOLD) {
+        finish_confirm_count = 0U;
+        return LAP_FINISH_EVENT_NONE;
+    }
+
+    if (finish_confirm_count < FINISH_CONFIRM_SAMPLE_COUNT) {
+        finish_confirm_count++;
+    }
+
+    if (finish_confirm_count >= FINISH_CONFIRM_SAMPLE_COUNT) {
         lap_state = LAP_STATE_FINISH_DETECTED;
         return LAP_FINISH_EVENT_FINISH;
     }
@@ -123,4 +147,9 @@ bool LapFinish_IsAborted(void)
 bool LapFinish_StartLineCleared(void)
 {
     return start_line_cleared;
+}
+
+uint8_t LapFinish_GetConfirmCount(void)
+{
+    return finish_confirm_count;
 }

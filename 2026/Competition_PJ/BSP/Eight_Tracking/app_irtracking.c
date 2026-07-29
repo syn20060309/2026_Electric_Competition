@@ -259,34 +259,23 @@ void printf_i2c_data(void)
 //    Motion_Car_Control(IRR_SPEED, 0, pid_output_IRR);
 //}
 #if LAP_FINISH_DEBUG
-static uint8_t Tracking_CountActive(uint8_t active_mask)
-{
-    uint8_t count = 0U;
-
-    while (active_mask != 0U) {
-        count += active_mask & 1U;
-        active_mask >>= 1U;
-    }
-
-    return count;
-}
-
 static void Tracking_DebugLapSample(uint32_t now_ms, uint32_t elapsed_ms,
     bool sensor_valid, uint8_t active_mask, LapFinish_Event event)
 {
     static uint32_t last_report_ms;
-    static bool last_all_active;
+    static bool last_finish_pattern;
     LapFinish_State state = LapFinish_GetState();
     bool enabled = LapFinish_StartLineCleared() &&
         (elapsed_ms >= FINISH_MIN_TIME_MS);
-    bool all_active = sensor_valid &&
-        (active_mask == FINISH_ALL_ACTIVE_MASK);
+    uint8_t active_count = Tracking_CountActive(active_mask);
+    bool finish_pattern = sensor_valid &&
+        (active_count >= FINISH_ACTIVE_COUNT_THRESHOLD);
 
-    if (all_active && !last_all_active) {
-        printf("LAP ALL-EIGHT-ACTIVE time=%lu mask=0x%02X\r\n",
-            (unsigned long) elapsed_ms, active_mask);
+    if (finish_pattern && !last_finish_pattern) {
+        printf("LAP FINISH-CANDIDATE time=%lu mask=0x%02X count=%u\r\n",
+            (unsigned long) elapsed_ms, active_mask, active_count);
     }
-    last_all_active = all_active;
+    last_finish_pattern = finish_pattern;
 
     if (event == LAP_FINISH_EVENT_FINISH) {
         printf("LAP FINISH TRIGGER time=%lu\r\n",
@@ -300,11 +289,11 @@ static void Tracking_DebugLapSample(uint32_t now_ms, uint32_t elapsed_ms,
 
     last_report_ms = now_ms;
     printf("LAP state=%d time=%lu valid=%u mask=0x%02X count=%u "
-           "cleared=%u enabled=%u event=%d\r\n",
+           "threshold=%u cleared=%u enabled=%u confirm=%u event=%d\r\n",
         (int) state, (unsigned long) elapsed_ms, sensor_valid ? 1U : 0U,
-        active_mask, Tracking_CountActive(active_mask),
+        active_mask, active_count, FINISH_ACTIVE_COUNT_THRESHOLD,
         LapFinish_StartLineCleared() ? 1U : 0U, enabled ? 1U : 0U,
-        (int) event);
+        LapFinish_GetConfirmCount(), (int) event);
 }
 #endif
 

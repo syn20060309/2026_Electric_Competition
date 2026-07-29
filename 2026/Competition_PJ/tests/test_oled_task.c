@@ -162,13 +162,15 @@ static void test_finish_screen_uses_lap_outcome(void)
     fake_time_ms = 1000U;
     RaceTimer_Start();
     LapFinish_Start(fake_time_ms);
-    assert(LapFinish_Update(1100U, 100U, true, 0x3FU) ==
+    assert(LapFinish_Update(1100U, 100U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(1200U, 200U, true, 0x3FU) ==
+    assert(LapFinish_Update(1200U, 200U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_Update(16000U, 15000U, true, 0xFFU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(16001U, 15001U, true, 0x7FU) ==
         LAP_FINISH_EVENT_FINISH);
-    fake_time_ms = 16000U;
+    fake_time_ms = 16001U;
     RaceTimer_Stop();
     LapFinish_MarkFinished();
 
@@ -202,9 +204,9 @@ static void test_timeout_screen_uses_lap_outcome(void)
     fake_time_ms = 1000U;
     RaceTimer_Start();
     LapFinish_Start(fake_time_ms);
-    assert(LapFinish_Update(1100U, 100U, true, 0x3FU) ==
+    assert(LapFinish_Update(1100U, 100U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(1200U, 200U, true, 0x3FU) ==
+    assert(LapFinish_Update(1200U, 200U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_CheckTimeout(35000U));
     fake_time_ms = 36000U;

@@ -6,7 +6,8 @@
 
 #define FINISH_MIN_TIME_MS              14000U
 #define START_LINE_CLEAR_CONFIRM_MS       100U
-#define FINISH_ALL_ACTIVE_MASK           0xFFU
+#define FINISH_ACTIVE_COUNT_THRESHOLD       6U
+#define FINISH_CONFIRM_SAMPLE_COUNT          2U
 #define LAP_SAFETY_TIMEOUT_MS           35000U
 
 #define ENABLE_K1_MANUAL_STOP_DEBUG         0
@@ -41,5 +42,6 @@ void LapFinish_MarkTimeout(void);
 bool LapFinish_IsFinished(void);
 bool LapFinish_IsAborted(void);
 bool LapFinish_StartLineCleared(void);
+uint8_t LapFinish_GetConfirmCount(void);
 
 #endif

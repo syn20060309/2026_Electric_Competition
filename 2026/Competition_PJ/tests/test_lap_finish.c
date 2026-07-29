@@ -6,15 +6,15 @@
 
 static void confirm_start_line_cleared(uint32_t first_clear_ms)
 {
-    assert(LapFinish_Update(first_clear_ms, 100U, true, 0x3FU) ==
+    assert(LapFinish_Update(first_clear_ms, 100U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_GetState() == LAP_STATE_LEAVING_START);
 
-    assert(LapFinish_Update(first_clear_ms + 99U, 199U, true, 0x7FU) ==
+    assert(LapFinish_Update(first_clear_ms + 99U, 199U, true, 0x0FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_GetState() == LAP_STATE_LEAVING_START);
 
-    assert(LapFinish_Update(first_clear_ms + 100U, 200U, true, 0x3FU) ==
+    assert(LapFinish_Update(first_clear_ms + 100U, 200U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_GetState() == LAP_STATE_RUNNING);
     assert(LapFinish_StartLineCleared());
@@ -38,21 +38,26 @@ static void test_start_line_requires_valid_continuous_clear(void)
 
     assert(LapFinish_Update(1010U, 10U, true, 0xFFU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(1020U, 20U, true, 0x3FU) ==
+    assert(LapFinish_Update(1020U, 20U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_Update(1119U, 119U, false, 0x00U) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(1120U, 120U, true, 0x3FU) ==
+    assert(LapFinish_Update(1120U, 120U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_Update(1219U, 219U, true, 0x3FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_GetState() == LAP_STATE_LEAVING_START);
-    assert(LapFinish_Update(1220U, 220U, true, 0x3FU) ==
+    assert(LapFinish_Update(1220U, 220U, true, 0x1FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(1319U, 319U, true, 0x1FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetState() == LAP_STATE_LEAVING_START);
+    assert(LapFinish_Update(1320U, 320U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_GetState() == LAP_STATE_RUNNING);
 }
 
-static void test_finish_requires_time_and_exactly_eight_active(void)
+static void test_finish_requires_time_validity_and_two_consecutive_samples(void)
 {
     LapFinish_Reset();
     LapFinish_Start(0U);
@@ -60,23 +65,67 @@ static void test_finish_requires_time_and_exactly_eight_active(void)
 
     assert(LapFinish_Update(13999U, 13999U, true, 0xFFU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(14000U, 14000U, true, 0x3FU) ==
+    assert(LapFinish_Update(14000U, 14000U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(14001U, 14001U, true, 0x7FU) ==
+    assert(LapFinish_Update(14001U, 14001U, true, 0x3FU) ==
         LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetConfirmCount() == 1U);
     assert(LapFinish_Update(14002U, 14002U, false, 0xFFU) ==
         LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetConfirmCount() == 0U);
+    assert(LapFinish_Update(14003U, 14003U, true, 0x3FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetConfirmCount() == 1U);
+    assert(LapFinish_Update(14004U, 14004U, true, 0x1FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetConfirmCount() == 0U);
+    assert(LapFinish_Update(14005U, 14005U, true, 0xFFU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetConfirmCount() == 1U);
     assert(LapFinish_GetState() == LAP_STATE_RUNNING);
 
-    assert(LapFinish_Update(14003U, 14003U, true, 0xFFU) ==
+    assert(LapFinish_Update(14006U, 14006U, true, 0x7FU) ==
         LAP_FINISH_EVENT_FINISH);
+    assert(LapFinish_GetConfirmCount() == FINISH_CONFIRM_SAMPLE_COUNT);
     assert(LapFinish_GetState() == LAP_STATE_FINISH_DETECTED);
-    assert(LapFinish_Update(14004U, 14004U, true, 0xFFU) ==
+    assert(LapFinish_Update(14007U, 14007U, true, 0xFFU) ==
         LAP_FINISH_EVENT_NONE);
 
     LapFinish_MarkFinished();
     assert(LapFinish_GetState() == LAP_STATE_FINISHED);
     assert(LapFinish_IsFinished());
+}
+
+static void assert_active_count_can_finish(uint8_t active_mask)
+{
+    LapFinish_Reset();
+    LapFinish_Start(0U);
+    confirm_start_line_cleared(100U);
+
+    assert(LapFinish_Update(14000U, 14000U, true, active_mask) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(14001U, 14001U, true, active_mask) ==
+        LAP_FINISH_EVENT_FINISH);
+}
+
+static void test_six_seven_and_eight_active_can_finish(void)
+{
+    assert_active_count_can_finish(0x3FU);
+    assert_active_count_can_finish(0x7FU);
+    assert_active_count_can_finish(0xFFU);
+}
+
+static void test_start_line_must_be_cleared_before_finish(void)
+{
+    LapFinish_Reset();
+    LapFinish_Start(0U);
+
+    assert(LapFinish_Update(15000U, 15000U, true, 0xFFU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(15001U, 15001U, true, 0xFFU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetState() == LAP_STATE_LEAVING_START);
+    assert(!LapFinish_StartLineCleared());
 }
 
 static void test_timeout_is_not_finish(void)
@@ -115,7 +164,12 @@ static void test_clear_confirmation_handles_clock_wrap(void)
 
     assert(LapFinish_Update(UINT32_MAX - 50U, 30U, true, 0x3FU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(49U, 130U, true, 0x3FU) ==
+    assert(LapFinish_Update(UINT32_MAX - 40U, 40U, true, 0x1FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(58U, 139U, true, 0x1FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_GetState() == LAP_STATE_LEAVING_START);
+    assert(LapFinish_Update(59U, 140U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_GetState() == LAP_STATE_RUNNING);
 }
@@ -124,7 +178,9 @@ int main(void)
 {
     test_initial_state_and_start();
     test_start_line_requires_valid_continuous_clear();
-    test_finish_requires_time_and_exactly_eight_active();
+    test_finish_requires_time_validity_and_two_consecutive_samples();
+    test_six_seven_and_eight_active_can_finish();
+    test_start_line_must_be_cleared_before_finish();
     test_timeout_is_not_finish();
     test_abort_and_restart();
     test_clear_confirmation_handles_clock_wrap();

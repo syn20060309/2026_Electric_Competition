@@ -16,3 +16,15 @@ uint8_t Tracking_BuildActiveMask(
 
     return (uint8_t) ~raw_mask;
 }
+
+uint8_t Tracking_CountActive(uint8_t active_mask)
+{
+    uint8_t count = 0U;
+
+    while (active_mask != 0U) {
+        count += (uint8_t) (active_mask & 1U);
+        active_mask >>= 1U;
+    }
+
+    return count;
+}
