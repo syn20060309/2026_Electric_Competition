@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include "lap_finish.h"
 #include "oled.h"
 #include "race_timer.h"
 
@@ -14,6 +15,7 @@
 
 static bool oled_task_ready;
 static RaceTimerState displayed_state = RACE_TIMER_IDLE;
+static LapFinish_State displayed_lap_state = LAP_STATE_IDLE;
 static uint32_t last_oled_update_ms;
 
 void OLED_ShowTime(uint32_t elapsed_ms)
@@ -36,12 +38,20 @@ static void OLED_ShowIdleScreen(void)
     OLED_Update();
 }
 
-static void OLED_ShowRaceState(RaceTimerState state)
+static void OLED_ShowRaceState(
+    RaceTimerState state, LapFinish_State lap_state)
 {
     OLED_ShowString(0U, OLED_STATUS_ROW, OLED_BLANK_LINE);
     OLED_ShowString(0U, OLED_PROMPT_ROW, OLED_BLANK_LINE);
+    OLED_ShowString(0U, OLED_TIME_ROW, OLED_BLANK_LINE);
 
-    if (state == RACE_TIMER_RUNNING) {
+    if (lap_state == LAP_STATE_FINISHED) {
+        OLED_ShowString(0U, OLED_STATUS_ROW, "FINISH");
+    } else if (lap_state == LAP_STATE_ABORTED) {
+        OLED_ShowString(0U, OLED_STATUS_ROW, "ABORT");
+    } else if (lap_state == LAP_STATE_TIMEOUT) {
+        OLED_ShowString(0U, OLED_STATUS_ROW, "TIMEOUT");
+    } else if (state == RACE_TIMER_RUNNING) {
         OLED_ShowString(0U, OLED_STATUS_ROW, "RUNNING");
     } else if (state == RACE_TIMER_STOPPED) {
         OLED_ShowString(0U, OLED_STATUS_ROW, "STOPPED");
@@ -55,6 +65,7 @@ void OLED_TaskInit(void)
 {
     oled_task_ready = false;
     displayed_state = RACE_TIMER_IDLE;
+    displayed_lap_state = LAP_STATE_IDLE;
     last_oled_update_ms = 0U;
 
     OLED_Init();
@@ -69,6 +80,7 @@ void OLED_TaskInit(void)
 void OLED_Task(uint32_t now_ms)
 {
     RaceTimerState state;
+    LapFinish_State lap_state;
 
     if (!oled_task_ready || !OLED_IsReady()) {
         oled_task_ready = false;
@@ -76,10 +88,13 @@ void OLED_Task(uint32_t now_ms)
     }
 
     state = RaceTimer_GetState();
-    if (state != displayed_state) {
+    lap_state = LapFinish_GetState();
+    if ((state != displayed_state) ||
+        (lap_state != displayed_lap_state)) {
         displayed_state = state;
+        displayed_lap_state = lap_state;
         last_oled_update_ms = now_ms;
-        OLED_ShowRaceState(state);
+        OLED_ShowRaceState(state, lap_state);
         return;
     }
 

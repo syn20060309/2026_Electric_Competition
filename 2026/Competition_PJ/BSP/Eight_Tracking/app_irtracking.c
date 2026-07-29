@@ -1,17 +1,23 @@
 #include "app_irtracking.h"
 
+#include "lap_finish.h"
+#include "race_control.h"
+#include "race_timer.h"
+#include "timer.h"
+#include "tracking_i2c_policy.h"
+#include "tracking_sample.h"
+
 #define IRTrack_Trun_KP (300)
 #define IRTrack_Trun_KI (0.2) 
 #define IRTrack_Trun_KD (2) 
 #define IRR_SPEED 			  400  //巡线速度   Patrol speed
 #define CHANGE_THRESHOLD 3
+#define IR_I2C_TIMEOUT_MS 5U
+#define IR_I2C_LOOP_GUARD 100000U
 const float pid_out_max = 5000.0f; 
 const float Integral_max = 500.0f; // 积分限幅值 
 int pid_output_IRR = 0;
 u8 trun_flag = 0;
-static int8_t err = 0;
-// 存储上一次的传感器数据组合
-static uint8_t prev_sensor_data = 0;
 
 
 float PID_IR_Calc(int16_t actual_value)
@@ -58,33 +64,118 @@ void IRI2C_WriteByte(uint8_t addr, uint8_t dat) {
     DL_I2C_flushControllerTXFIFO(Sensor_INST);
 }
  
-uint8_t IRI2C_ReadByte(uint8_t addr) {
-    uint8_t data;
- 
-    DL_I2C_fillControllerTXFIFO(Sensor_INST, &addr, 1);
-	
-	DL_I2C_disableInterrupt(Sensor_INST, DL_I2C_INTERRUPT_CONTROLLER_TXFIFO_TRIGGER);
-	
-    while (!(DL_I2C_getControllerStatus(Sensor_INST) & DL_I2C_CONTROLLER_STATUS_IDLE));
-    DL_I2C_startControllerTransfer(Sensor_INST, IR_I2C_ADDR, DL_I2C_CONTROLLER_DIRECTION_TX, 1);
-    while (DL_I2C_getControllerStatus(Sensor_INST) & DL_I2C_CONTROLLER_STATUS_BUSY_BUS);
-    while (!(DL_I2C_getControllerStatus(Sensor_INST) & DL_I2C_CONTROLLER_STATUS_IDLE));
-//    DL_I2C_flushControllerTXFIFO(Sensor_INST);
- 
-    DL_I2C_startControllerTransfer(Sensor_INST, IR_I2C_ADDR, DL_I2C_CONTROLLER_DIRECTION_RX, 1);
-    while (DL_I2C_getControllerStatus(Sensor_INST) & DL_I2C_CONTROLLER_STATUS_BUSY_BUS);
-    while (!(DL_I2C_getControllerStatus(Sensor_INST) & DL_I2C_CONTROLLER_STATUS_IDLE));
-    data = DL_I2C_receiveControllerData(Sensor_INST);
- 
-    return data;
+static void IRI2C_Abort(void)
+{
+    DL_I2C_resetControllerTransfer(Sensor_INST);
+    DL_I2C_flushControllerTXFIFO(Sensor_INST);
+    DL_I2C_flushControllerRXFIFO(Sensor_INST);
+    DL_I2C_clearInterruptStatus(Sensor_INST,
+        DL_I2C_INTERRUPT_CONTROLLER_NACK |
+        DL_I2C_INTERRUPT_CONTROLLER_ARBITRATION_LOST);
+}
+
+static bool IRI2C_DeadlineExpired(
+    uint32_t start_ms, uint32_t *loop_guard)
+{
+    if (*loop_guard == 0U) {
+        return true;
+    }
+
+    (*loop_guard)--;
+    return (uint32_t) (Get_Time() - start_ms) >= IR_I2C_TIMEOUT_MS;
+}
+
+static bool IRI2C_WaitForIdle(void)
+{
+    uint32_t start_ms = Get_Time();
+    uint32_t loop_guard = IR_I2C_LOOP_GUARD;
+
+    while (true) {
+        uint32_t status = DL_I2C_getControllerStatus(Sensor_INST);
+
+        if (Tracking_I2CStatusFailed(status)) {
+            IRI2C_Abort();
+            return false;
+        }
+        if (Tracking_I2CStatusReady(status, false)) {
+            return true;
+        }
+        if (IRI2C_DeadlineExpired(start_ms, &loop_guard)) {
+            IRI2C_Abort();
+            return false;
+        }
+    }
+}
+
+static bool IRI2C_WaitForTransfer(void)
+{
+    uint32_t start_ms = Get_Time();
+    uint32_t loop_guard = IR_I2C_LOOP_GUARD;
+
+    while (true) {
+        uint32_t status = DL_I2C_getControllerStatus(Sensor_INST);
+
+        if (Tracking_I2CStatusFailed(status)) {
+            IRI2C_Abort();
+            return false;
+        }
+        if (Tracking_I2CStatusReady(status, true)) {
+            return true;
+        }
+        if (IRI2C_DeadlineExpired(start_ms, &loop_guard)) {
+            IRI2C_Abort();
+            return false;
+        }
+    }
+}
+
+bool IRI2C_ReadByte(uint8_t addr, uint8_t *data)
+{
+    if (data == NULL) {
+        return false;
+    }
+
+    if (!IRI2C_WaitForIdle()) {
+        return false;
+    }
+
+    DL_I2C_flushControllerTXFIFO(Sensor_INST);
+    DL_I2C_flushControllerRXFIFO(Sensor_INST);
+    (void) DL_I2C_fillControllerTXFIFO(Sensor_INST, &addr, 1U);
+    DL_I2C_disableInterrupt(
+        Sensor_INST, DL_I2C_INTERRUPT_CONTROLLER_TXFIFO_TRIGGER);
+    DL_I2C_startControllerTransfer(Sensor_INST, IR_I2C_ADDR,
+        DL_I2C_CONTROLLER_DIRECTION_TX, 1U);
+
+    if (!IRI2C_WaitForTransfer()) {
+        return false;
+    }
+
+    DL_I2C_startControllerTransfer(Sensor_INST, IR_I2C_ADDR,
+        DL_I2C_CONTROLLER_DIRECTION_RX, 1U);
+    if (!IRI2C_WaitForTransfer() ||
+        DL_I2C_isControllerRXFIFOEmpty(Sensor_INST)) {
+        IRI2C_Abort();
+        return false;
+    }
+
+    *data = DL_I2C_receiveControllerData(Sensor_INST);
+    return true;
 }
 
 
 
-void deal_IRdata(u8 *x1,u8 *x2,u8 *x3,u8 *x4,u8 *x5,u8 *x6,u8 *x7,u8 *x8)
+bool deal_IRdata(
+    u8 *x1, u8 *x2, u8 *x3, u8 *x4,
+    u8 *x5, u8 *x6, u8 *x7, u8 *x8)
 {
-	u8 IRbuf = 0xFF;
-	IRbuf = IRI2C_ReadByte(0x30);
+    u8 IRbuf;
+
+    if ((x1 == NULL) || (x2 == NULL) || (x3 == NULL) || (x4 == NULL) ||
+        (x5 == NULL) || (x6 == NULL) || (x7 == NULL) || (x8 == NULL) ||
+        !IRI2C_ReadByte(0x30U, &IRbuf)) {
+        return false;
+    }
 	
 	*x1 = (IRbuf>>7)&0x01;
 	*x2 = (IRbuf>>6)&0x01;
@@ -94,14 +185,21 @@ void deal_IRdata(u8 *x1,u8 *x2,u8 *x3,u8 *x4,u8 *x5,u8 *x6,u8 *x7,u8 *x8)
 	*x6 = (IRbuf>>2)&0x01;
 	*x7 = (IRbuf>>1)&0x01;
 	*x8 = (IRbuf>>0)&0x01;
+    return true;
 }
 
 
 void printf_i2c_data(void)
 {
     static uint8_t ir_x1,ir_x2,ir_x3,ir_x4,ir_x5,ir_x6,ir_x7,ir_x8;
-    deal_IRdata(&ir_x1,&ir_x2,&ir_x3,&ir_x4,&ir_x5,&ir_x6,&ir_x7,&ir_x8);
-    printf("x1:%d,x2:%d,x3:%d,x4:%d,x5:%d,x6:%d,x7:%d,x8:%d\r\n",ir_x1,ir_x2,ir_x3,ir_x4,ir_x5,ir_x6,ir_x7,ir_x8);
+    if (deal_IRdata(
+            &ir_x1, &ir_x2, &ir_x3, &ir_x4,
+            &ir_x5, &ir_x6, &ir_x7, &ir_x8)) {
+        printf("x1:%d,x2:%d,x3:%d,x4:%d,x5:%d,x6:%d,x7:%d,x8:%d\r\n",
+            ir_x1, ir_x2, ir_x3, ir_x4, ir_x5, ir_x6, ir_x7, ir_x8);
+    } else {
+        printf("IR I2C read failed\r\n");
+    }
 }
 //void LineWalking(void)
 //{
@@ -160,12 +258,99 @@ void printf_i2c_data(void)
 //    pid_output_IRR = (int)(PID_IR_Calc(err));
 //    Motion_Car_Control(IRR_SPEED, 0, pid_output_IRR);
 //}
+#if LAP_FINISH_DEBUG
+static uint8_t Tracking_CountActive(uint8_t active_mask)
+{
+    uint8_t count = 0U;
+
+    while (active_mask != 0U) {
+        count += active_mask & 1U;
+        active_mask >>= 1U;
+    }
+
+    return count;
+}
+
+static void Tracking_DebugLapSample(uint32_t now_ms, uint32_t elapsed_ms,
+    bool sensor_valid, uint8_t active_mask, LapFinish_Event event)
+{
+    static uint32_t last_report_ms;
+    static bool last_all_active;
+    LapFinish_State state = LapFinish_GetState();
+    bool enabled = LapFinish_StartLineCleared() &&
+        (elapsed_ms >= FINISH_MIN_TIME_MS);
+    bool all_active = sensor_valid &&
+        (active_mask == FINISH_ALL_ACTIVE_MASK);
+
+    if (all_active && !last_all_active) {
+        printf("LAP ALL-EIGHT-ACTIVE time=%lu mask=0x%02X\r\n",
+            (unsigned long) elapsed_ms, active_mask);
+    }
+    last_all_active = all_active;
+
+    if (event == LAP_FINISH_EVENT_FINISH) {
+        printf("LAP FINISH TRIGGER time=%lu\r\n",
+            (unsigned long) elapsed_ms);
+    }
+
+    if ((event == LAP_FINISH_EVENT_NONE) &&
+        ((uint32_t) (now_ms - last_report_ms) < 100U)) {
+        return;
+    }
+
+    last_report_ms = now_ms;
+    printf("LAP state=%d time=%lu valid=%u mask=0x%02X count=%u "
+           "cleared=%u enabled=%u event=%d\r\n",
+        (int) state, (unsigned long) elapsed_ms, sensor_valid ? 1U : 0U,
+        active_mask, Tracking_CountActive(active_mask),
+        LapFinish_StartLineCleared() ? 1U : 0U, enabled ? 1U : 0U,
+        (int) event);
+}
+#endif
+
 void LineWalking(void)
 {
 	static int8_t err = 0;
 	static u8 x1,x2,x3,x4,x5,x6,x7,x8;
-	
-	deal_IRdata(&x1,&x2,&x3,&x4,&x5,&x6,&x7,&x8);
+    bool sensor_valid;
+    uint8_t active_mask = 0U;
+    uint32_t now_ms;
+    uint32_t elapsed_ms;
+    LapFinish_Event lap_event;
+
+    now_ms = Get_Time();
+    elapsed_ms = RaceTimer_GetElapsedMs();
+    if (LapFinish_CheckTimeout(elapsed_ms)) {
+#if LAP_FINISH_DEBUG
+        printf("LAP TIMEOUT TRIGGER time=%lu\r\n",
+            (unsigned long) elapsed_ms);
+#endif
+        Car_TimeoutStop();
+        return;
+    }
+
+    sensor_valid = deal_IRdata(
+        &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8);
+    if (sensor_valid) {
+        active_mask = Tracking_BuildActiveMask(
+            x1, x2, x3, x4, x5, x6, x7, x8);
+    }
+
+    lap_event = LapFinish_Update(
+        now_ms, elapsed_ms, sensor_valid, active_mask);
+
+#if LAP_FINISH_DEBUG
+    Tracking_DebugLapSample(
+        now_ms, elapsed_ms, sensor_valid, active_mask, lap_event);
+#endif
+
+    if (lap_event == LAP_FINISH_EVENT_FINISH) {
+        Car_FinishStop();
+        return;
+    }
+    if (!sensor_valid) {
+        return;
+    }
 	
 	//debug
 //	static char bufbuf[30]={'\0'};
@@ -234,7 +419,10 @@ void LineWalking(void)
 int LineCheck(void)
 {
     static u8 x1,x2,x3,x4,x5,x6,x7,x8;
-	deal_IRdata(&x1,&x2,&x3,&x4,&x5,&x6,&x7,&x8);
+	if (!deal_IRdata(
+            &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8)) {
+        return WHITE;
+    }
 	
 	// 只有当所有传感器都为1（未检测到黑线）时，if_have才为0
 	if(x1 && x2 && x3 && x4 && x5 && x6 && x7 && x8)

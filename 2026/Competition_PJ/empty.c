@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "led.h"
 #include "buzzer.h"
+#include "lap_finish.h"
 #include "oled_task.h"
 
 
@@ -34,6 +35,7 @@ int main(void)
     //定时器开始计时   Timer start
     DL_TimerA_startCounter(TIMER_0_INST);
 
+    LapFinish_Init();
     OLED_TaskInit();
 
     int i = 0;

@@ -1,7 +1,8 @@
 #include "key.h"
-#include "race_timer.h"
 
-extern int g_LinePortal_flag;
+#include "lap_finish.h"
+#include "race_control.h"
+#include "race_timer.h"
 
 // ���尴����� - Define key handle
 Key_t key1 = {
@@ -90,17 +91,24 @@ void Key_Handle(void)
 
         switch (event) {
             case KEY_EVENT_SHORT:
+#if ENABLE_K1_MANUAL_STOP_DEBUG
+                if (RaceTimer_IsRunning()) {
+                    Car_AbortStop();
+                } else {
+                    Car_RaceStart(currentTick);
+                }
+#else
+                if (!RaceTimer_IsRunning()) {
+                    Car_RaceStart(currentTick);
+                }
+#endif
+                break;
             case KEY_EVENT_LONG:
-                g_LinePortal_flag = !g_LinePortal_flag;
-                if(g_LinePortal_flag)
-                {
-                    RaceTimer_Start();
+#if ENABLE_K1_EMERGENCY_STOP
+                if (RaceTimer_IsRunning()) {
+                    Car_AbortStop();
                 }
-                else
-                {
-                    RaceTimer_Stop();
-                    Contrl_Pwm(0,0,0,0);
-                }
+#endif
                 break;
             default:
                 break;

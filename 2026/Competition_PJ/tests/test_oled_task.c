@@ -6,6 +6,7 @@
 
 #include "oled.h"
 #include "oled_task.h"
+#include "lap_finish.h"
 #include "race_timer.h"
 
 static uint32_t fake_time_ms;
@@ -72,6 +73,7 @@ static void reset_fakes(bool ready)
     update_count = 0U;
     memset(rendered_lines, 0, sizeof(rendered_lines));
     RaceTimer_Reset();
+    LapFinish_Reset();
 }
 
 static void test_init_renders_idle_screen(void)
@@ -153,6 +155,67 @@ static void test_stop_screen_freezes_final_time(void)
     assert(strcmp(rendered_lines[4], "TIME:09.50s") == 0);
 }
 
+static void test_finish_screen_uses_lap_outcome(void)
+{
+    reset_fakes(true);
+    OLED_TaskInit();
+    fake_time_ms = 1000U;
+    RaceTimer_Start();
+    LapFinish_Start(fake_time_ms);
+    assert(LapFinish_Update(1100U, 100U, true, 0x3FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(1200U, 200U, true, 0x3FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(16000U, 15000U, true, 0xFFU) ==
+        LAP_FINISH_EVENT_FINISH);
+    fake_time_ms = 16000U;
+    RaceTimer_Stop();
+    LapFinish_MarkFinished();
+
+    OLED_Task(16000U);
+
+    assert(strcmp(rendered_lines[0], "FINISH") == 0);
+    assert(strcmp(rendered_lines[4], "TIME:15.00s") == 0);
+}
+
+static void test_abort_screen_uses_lap_outcome(void)
+{
+    reset_fakes(true);
+    OLED_TaskInit();
+    fake_time_ms = 1000U;
+    RaceTimer_Start();
+    LapFinish_Start(fake_time_ms);
+    fake_time_ms = 3500U;
+    RaceTimer_Stop();
+    LapFinish_MarkAborted();
+
+    OLED_Task(3500U);
+
+    assert(strcmp(rendered_lines[0], "ABORT") == 0);
+    assert(strcmp(rendered_lines[4], "TIME:02.50s") == 0);
+}
+
+static void test_timeout_screen_uses_lap_outcome(void)
+{
+    reset_fakes(true);
+    OLED_TaskInit();
+    fake_time_ms = 1000U;
+    RaceTimer_Start();
+    LapFinish_Start(fake_time_ms);
+    assert(LapFinish_Update(1100U, 100U, true, 0x3FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_Update(1200U, 200U, true, 0x3FU) ==
+        LAP_FINISH_EVENT_NONE);
+    assert(LapFinish_CheckTimeout(35000U));
+    fake_time_ms = 36000U;
+    RaceTimer_Stop();
+
+    OLED_Task(36000U);
+
+    assert(strcmp(rendered_lines[0], "TIMEOUT") == 0);
+    assert(strcmp(rendered_lines[4], "TIME:35.00s") == 0);
+}
+
 int main(void)
 {
     test_init_renders_idle_screen();
@@ -160,5 +223,8 @@ int main(void)
     test_running_screen_formats_centiseconds();
     test_running_updates_are_throttled_to_100_ms();
     test_stop_screen_freezes_final_time();
+    test_finish_screen_uses_lap_outcome();
+    test_abort_screen_uses_lap_outcome();
+    test_timeout_screen_uses_lap_outcome();
     return 0;
 }
