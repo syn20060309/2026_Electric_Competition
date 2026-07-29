@@ -3,15 +3,10 @@
 #include "usart.h"
 #include "app_motor_usart.h"
 #include "app_motor.h"
-#include "bsp_mpu6050.h"
-#include "app_mpu6050.h"
-#include "inv_mpu.h"
 #include "app_irtracking.h"
 #include "key.h"
 #include "led.h"
 #include "buzzer.h"
-#include "task.h"
-#include "questions.h"
 
 
 #define MOTOR_TYPE 5   //1:520电机 2:310电机 3:测速码盘TT电机 4:TT直流减速电机 5:L型520电机
@@ -26,15 +21,6 @@ int main(void)
     //设置电机类型    Set motor type
     Set_Motor(MOTOR_TYPE);
     send_upload_data(false,false,true);delay_ms(10); //平均速度积分计算里程,详细可以参考四路驱动板协议 The mileage is calculated by integrating the average speed. For detailed information, please refer to the four-way driver board protocol
-
-    /*MPU6050初始化 MPU6050 Initialization*/
-    MPU6050_Init();
-    //DMP初始化 DMP Initialization
-    while( mpu_dmp_init() )
-    {
-        printf("dmp error\r\n");
-        delay_ms(200);
-    }
 
     //蜂鸣器初始化  Buzzer initialization
     PWM_Buzzer_Init();
@@ -59,39 +45,11 @@ int main(void)
     
 	while(1)
 	{
-        Scheduler_Run();//开始运行任务调度器    Start running the task scheduler
-
-        //题目选择判断  Question selection judgment
-       if(g_LinePortal_flag)
-       {    
-           switch(State_Machine.Main_State)
-			{
-				case STOP_STATE:
-					Contrl_Pwm(0,0,0,0);
-					break;
-				
-				case QUESTION_1://赛题1 Question 1
-					Question_Task_1();
-					break;
-				
-				case QUESTION_2://赛题2 Question 2
-					Question_Task_2();
-					break;
-				
-				case QUESTION_3://赛题3 Question 3
-					Question_Task_3();				
-					break;
-				
-				case QUESTION_4://赛题4 Question 4
-				  Question_Task_4();	
-				break;
-					
-				default:
-					break;
-			}	
-			
-       }
-        
+        Key_Handle();
+        if(g_LinePortal_flag)
+        {
+            LineWalking();
+        }
 	}
 	
 }
