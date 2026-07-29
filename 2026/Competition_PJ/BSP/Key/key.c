@@ -1,4 +1,5 @@
 #include "key.h"
+#include "race_timer.h"
 
 extern int g_LinePortal_flag;
 
@@ -91,8 +92,13 @@ void Key_Handle(void)
             case KEY_EVENT_SHORT:
             case KEY_EVENT_LONG:
                 g_LinePortal_flag = !g_LinePortal_flag;
-                if(!g_LinePortal_flag)
+                if(g_LinePortal_flag)
                 {
+                    RaceTimer_Start();
+                }
+                else
+                {
+                    RaceTimer_Stop();
                     Contrl_Pwm(0,0,0,0);
                 }
                 break;

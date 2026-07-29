@@ -8,6 +8,7 @@
 #include "timer.h"
 #include "led.h"
 #include "buzzer.h"
+#include "oled_task.h"
 
 
 #define MOTOR_TYPE 5   //1:520电机 2:310电机 3:测速码盘TT电机 4:TT直流减速电机 5:L型520电机
@@ -35,6 +36,8 @@ int main(void)
     //定时器开始计时   Timer start
     DL_TimerA_startCounter(TIMER_0_INST);
 
+    OLED_TaskInit();
+
     int i = 0;
     for(i=0;i<4;i++)
     {
@@ -55,6 +58,7 @@ int main(void)
         }
 
 		Key_Handle();
+        OLED_Task(now);
 		if(g_LinePortal_flag)
 		{
 			LineWalking();

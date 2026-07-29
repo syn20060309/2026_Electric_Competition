@@ -50,6 +50,7 @@
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/Key"/>
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/LED"/>
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/Motor"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/BSP/OLED"/>
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/Timer"/>
                                 </option>
                                 <option id="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.DEFINE.1936845962" superClass="com.ti.ccstudio.buildDefinitions.TMS470_TICLANG_4.0.compilerID.DEFINE" valueType="definedSymbols">
@@ -106,6 +107,9 @@
                             </tool>
                         </toolChain>
                     </folderInfo>
+                    <sourceEntries>
+                        <entry excluding="tests" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+                    </sourceEntries>
                 </configuration>
             </storageModule>
             <storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
