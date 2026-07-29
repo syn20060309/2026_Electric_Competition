@@ -12,7 +12,6 @@
 const GPIO    = scripting.addModule("/ti/driverlib/GPIO", {}, false);
 const GPIO1   = GPIO.addInstance();
 const GPIO2   = GPIO.addInstance();
-const GPIO3   = GPIO.addInstance();
 const I2C     = scripting.addModule("/ti/driverlib/I2C", {}, false);
 const I2C1    = I2C.addInstance();
 const PWM     = scripting.addModule("/ti/driverlib/PWM", {}, false);
@@ -54,17 +53,6 @@ GPIO2.$name                         = "KEY";
 GPIO2.associatedPins[0].direction   = "INPUT";
 GPIO2.associatedPins[0].$name       = "K1";
 GPIO2.associatedPins[0].pin.$assign = "PA2";
-
-GPIO3.$name                          = "MPU6050";
-GPIO3.associatedPins.create(2);
-GPIO3.associatedPins[0].$name        = "SCL";
-GPIO3.associatedPins[0].initialValue = "SET";
-GPIO3.associatedPins[0].ioStructure  = "OD";
-GPIO3.associatedPins[0].pin.$assign  = "PA1";
-GPIO3.associatedPins[1].$name        = "SDA";
-GPIO3.associatedPins[1].initialValue = "SET";
-GPIO3.associatedPins[1].ioStructure  = "OD";
-GPIO3.associatedPins[1].pin.$assign  = "PA0";
 
 I2C1.$name                             = "Sensor";
 I2C1.basicEnableController             = true;

@@ -116,39 +116,3 @@ void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)
 		
 }
 
-// 通过偏航角计算当前的偏差值，校准小车运动方向。   Calculate the current deviation value by yaw angle and calibrate the direction of the carriage movement.
-void Motion_Yaw_Calc(float offset_yaw)
-{
-    //int speed_L1 = speed_L1_setup - (int)offset_yaw;
-    int speed_L2 = speed_L2_setup + (int)offset_yaw;  //yaw为负 右转
-    //int speed_R1 = speed_R1_setup + (int)offset_yaw;
-    int speed_R2 = speed_R2_setup - (int)offset_yaw;
-        
-    //if (speed_L1 > 1000) speed_L1 = 1000;
-    //if (speed_L1 < -1000) speed_L1 = -1000;
-    if (speed_L2 > 1000) speed_L2 = 1000;	
-    if (speed_L2 < -1000) speed_L2 = -1000;
-    //if (speed_R1 > 1000) speed_R1 = 1000;
-    //if (speed_R1 < -1000) speed_R1 = -1000;
-    if (speed_R2 > 1000) speed_R2 = 1000;
-    if (speed_R2 < -1000) speed_R2 = -1000;
-    Contrl_Speed(0, speed_L2, 0, speed_R2);
-}
-
-//获取两个个电机的平均的10ms的编码器数据，累计增加来获取里程值
-//Get the average encoder data of four motors and add the cumulatively to get the mileage value
-void Get_Odometry(void)
-{
-    if(encoder_odometry_flag)
-    {
-		float average_speed = 0;
-     Deal_data_real();
-       //odometry_sum += (Encoder_Offset[1] + Encoder_Offset[3])/2;
-		average_speed = ((g_Speed[1] + g_Speed[3]) / 2);  //mm/s
-		odometry_sum+=average_speed;     //mm
-    //odometry_sum += ((Encoder_Offset[0] + Encoder_Offset[1] + Encoder_Offset[2] + Encoder_Offset[3]) / 4);
-		//	printf("%f  ",odometry_sum);
-    }
-}
-
-
