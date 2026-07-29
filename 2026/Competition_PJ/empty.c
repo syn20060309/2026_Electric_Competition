@@ -14,8 +14,6 @@
 #define MOTOR_TYPE 5   //1:520电机 2:310电机 3:测速码盘TT电机 4:TT直流减速电机 5:L型520电机
                        //1:520 motor 2:310 motor 3:speed code disc TT motor 4:TT DC reduction motor 5:L type 520 motor
 
-#define SENSOR_REPORT_INTERVAL_MS 50U
-
 int g_LinePortal_flag = 0;
 
 int main(void)
@@ -46,17 +44,9 @@ int main(void)
         delay_ms(100);
     }
 
-    uint32_t last_sensor_report = Get_Time();
-
 	while(1)
 	{
         uint32_t now = Get_Time();
-        if(now - last_sensor_report >= SENSOR_REPORT_INTERVAL_MS)
-        {
-            last_sensor_report = now;
-            printf_i2c_data();
-        }
-
 		Key_Handle();
         OLED_Task(now);
 		if(g_LinePortal_flag)
