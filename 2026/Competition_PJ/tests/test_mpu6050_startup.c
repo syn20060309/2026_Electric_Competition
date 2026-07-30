@@ -99,10 +99,27 @@ static void test_retries_complete_initialization_after_dmp_failures(void)
     assert(delay_values[1] == 200U);
 }
 
+static void test_returns_after_three_permanent_mpu_failures(void)
+{
+    reset_fakes();
+    mpu_results[0] = 1;
+    mpu_results[1] = 1;
+    mpu_results[2] = 1;
+    mpu_results[3] = 1;
+    mpu_result_count = 4U;
+
+    MPU6050_Startup();
+
+    assert(mpu_init_calls == 3U);
+    assert(dmp_init_calls == 0U);
+    assert(delay_calls == 2U);
+}
+
 int main(void)
 {
     test_initializes_mpu_once_and_accepts_first_dmp_success();
     test_retries_complete_initialization_after_mpu_failures();
     test_retries_complete_initialization_after_dmp_failures();
+    test_returns_after_three_permanent_mpu_failures();
     return 0;
 }

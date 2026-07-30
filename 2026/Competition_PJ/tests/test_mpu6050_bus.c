@@ -28,7 +28,7 @@ static void test_scl_set_and_clear_change_only_the_scl_latch(void)
     assert((test_gpio_a.output_enable & MPU6050_SCL_PIN) != 0U);
 }
 
-static void test_sda_input_mode_keeps_hardware_open_drain_enabled(void)
+static void test_sda_direction_switch_matches_working_reference_driver(void)
 {
     reset_gpio();
 
@@ -36,9 +36,9 @@ static void test_sda_input_mode_keeps_hardware_open_drain_enabled(void)
     SDA_IN();
 
     assert((test_gpio_a.output_latch & MPU6050_SDA_PIN) == 0U);
-    assert((test_gpio_a.output_enable & MPU6050_SDA_PIN) != 0U);
+    assert((test_gpio_a.output_enable & MPU6050_SDA_PIN) == 0U);
 
-    SDA(1);
+    SDA_OUT();
 
     assert((test_gpio_a.output_latch & MPU6050_SDA_PIN) != 0U);
     assert((test_gpio_a.output_enable & MPU6050_SDA_PIN) != 0U);
@@ -56,7 +56,7 @@ static void test_sda_read_returns_the_sampled_line_level(void)
 int main(void)
 {
     test_scl_set_and_clear_change_only_the_scl_latch();
-    test_sda_input_mode_keeps_hardware_open_drain_enabled();
+    test_sda_direction_switch_matches_working_reference_driver();
     test_sda_read_returns_the_sampled_line_level();
     return 0;
 }

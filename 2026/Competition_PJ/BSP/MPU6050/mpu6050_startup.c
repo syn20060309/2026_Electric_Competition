@@ -8,8 +8,16 @@
 
 void MPU6050_Startup(void)
 {
-    while ((MPU6050_Init() != 0) || (mpu_dmp_init() != 0U)) {
+    unsigned int attempt;
+
+    for (attempt = 0U; attempt < 3U; attempt++) {
+        if ((MPU6050_Init() == 0) && (mpu_dmp_init() == 0U)) {
+            return;
+        }
+
         printf("dmp error\r\n");
-        delay_ms(200U);
+        if ((attempt + 1U) < 3U) {
+            delay_ms(200U);
+        }
     }
 }

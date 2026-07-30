@@ -7,9 +7,13 @@
 #include "delay.h"
 
 //PA1/PA0 use hardware open-drain GPIO for software I2C.
-#define SDA_OUT()   ((void) 0)
-#define SDA_IN()    ((void) 0)
-#define SDA_GET()   ((((DL_GPIO_readPins(MPU6050_PORT, MPU6050_SDA_PIN) & MPU6050_SDA_PIN) != 0U)) ? 1U : 0U)
+#define SDA_OUT()   {                                                       \
+                        DL_GPIO_initDigitalOutput(MPU6050_SDA_IOMUX);        \
+                        DL_GPIO_setPins(MPU6050_PORT, MPU6050_SDA_PIN);      \
+                        DL_GPIO_enableOutput(MPU6050_PORT, MPU6050_SDA_PIN); \
+                    }
+#define SDA_IN()    { DL_GPIO_initDigitalInput(MPU6050_SDA_IOMUX); }
+#define SDA_GET()   (((DL_GPIO_readPins(MPU6050_PORT, MPU6050_SDA_PIN) & MPU6050_SDA_PIN) != 0U) ? 1U : 0U)
 #define SDA(x)      ((x) ? DL_GPIO_setPins(MPU6050_PORT, MPU6050_SDA_PIN) : DL_GPIO_clearPins(MPU6050_PORT, MPU6050_SDA_PIN))
 #define SCL(x)      ((x) ? DL_GPIO_setPins(MPU6050_PORT, MPU6050_SCL_PIN) : DL_GPIO_clearPins(MPU6050_PORT, MPU6050_SCL_PIN))
 

@@ -14,6 +14,18 @@ extern GPIO_Regs test_gpio_a;
 #define MPU6050_PORT       (&test_gpio_a)
 #define MPU6050_SCL_PIN    (1UL << 1)
 #define MPU6050_SDA_PIN    (1UL << 0)
+#define MPU6050_SDA_IOMUX  (1U)
+
+static inline void DL_GPIO_initDigitalOutput(uint32_t iomux)
+{
+    (void) iomux;
+}
+
+static inline void DL_GPIO_initDigitalInput(uint32_t iomux)
+{
+    (void) iomux;
+    test_gpio_a.output_enable &= ~MPU6050_SDA_PIN;
+}
 
 static inline void DL_GPIO_setPins(GPIO_Regs *gpio, uint32_t pins)
 {
