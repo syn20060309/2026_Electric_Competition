@@ -5,5 +5,6 @@
 
 void OLED_TaskInit(void);
 void OLED_Task(uint32_t now_ms);
+void OLED_RefreshTask(void);
 
 #endif

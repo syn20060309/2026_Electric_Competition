@@ -10,5 +10,9 @@
 
 void Set_Motor(int MOTOR_TYPE);
 void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z);
+void Get_Odometry(void);
+
+extern uint8_t encoder_odometry_flag;
+extern float odometry_sum;
 
 #endif

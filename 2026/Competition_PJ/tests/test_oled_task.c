@@ -6,11 +6,13 @@
 
 #include "oled.h"
 #include "oled_task.h"
+#include "acceleration_task.h"
 #include "lap_finish.h"
 #include "race_timer.h"
 
 static uint32_t fake_time_ms;
 static bool fake_oled_ready;
+static MPU6050_AccelSample fake_accel_sample;
 static unsigned int update_count;
 static char rendered_lines[8][24];
 
@@ -66,10 +68,23 @@ bool OLED_WriteData(const uint8_t *data, uint16_t length)
     return fake_oled_ready;
 }
 
+bool MPU6050_AccelGetLatest(MPU6050_AccelSample *sample)
+{
+    *sample = fake_accel_sample;
+    return fake_accel_sample.valid;
+}
+
 static void reset_fakes(bool ready)
 {
     fake_oled_ready = ready;
     fake_time_ms = 0U;
+    fake_accel_sample.raw_x = 131;
+    fake_accel_sample.raw_y = -49;
+    fake_accel_sample.raw_z = 16384;
+    fake_accel_sample.x_g = 0.008f;
+    fake_accel_sample.y_g = -0.003f;
+    fake_accel_sample.z_g = 1.0f;
+    fake_accel_sample.valid = true;
     update_count = 0U;
     memset(rendered_lines, 0, sizeof(rendered_lines));
     RaceTimer_Reset();
@@ -82,10 +97,22 @@ static void test_init_renders_idle_screen(void)
 
     OLED_TaskInit();
 
-    assert(strcmp(rendered_lines[0], "LINE CAR") == 0);
-    assert(strcmp(rendered_lines[2], "PRESS KEY") == 0);
-    assert(strcmp(rendered_lines[4], "TIME:00.00s") == 0);
+    assert(strcmp(rendered_lines[0], "IDLE") == 0);
+    assert(strcmp(rendered_lines[2], "AX:+0.008g") == 0);
+    assert(strcmp(rendered_lines[4], "AY:-0.003g") == 0);
+    assert(strcmp(rendered_lines[6], "PRESS KEY") == 0);
     assert(update_count == 1U);
+}
+
+static void test_invalid_acceleration_renders_placeholders(void)
+{
+    reset_fakes(true);
+    fake_accel_sample.valid = false;
+
+    OLED_TaskInit();
+
+    assert(strcmp(rendered_lines[2], "AX:---") == 0);
+    assert(strcmp(rendered_lines[4], "AY:---") == 0);
 }
 
 static void test_failed_init_disables_task_writes(void)
@@ -99,6 +126,22 @@ static void test_failed_init_disables_task_writes(void)
     assert(update_count == 0U);
 }
 
+static void test_idle_acceleration_updates_every_100_ms(void)
+{
+    reset_fakes(true);
+    OLED_TaskInit();
+    unsigned int after_init = update_count;
+    fake_accel_sample.x_g = 0.012f;
+
+    OLED_Task(99U);
+    assert(update_count == after_init);
+
+    OLED_Task(100U);
+    assert(update_count == (after_init + 1U));
+    assert(strcmp(rendered_lines[2], "AX:+0.012g") == 0);
+    assert(strcmp(rendered_lines[6], "PRESS KEY") == 0);
+}
+
 static void test_running_screen_formats_centiseconds(void)
 {
     reset_fakes(true);
@@ -110,7 +153,9 @@ static void test_running_screen_formats_centiseconds(void)
     OLED_Task(0U);
 
     assert(strcmp(rendered_lines[0], "RUNNING") == 0);
-    assert(strcmp(rendered_lines[4], "TIME:08.37s") == 0);
+    assert(strcmp(rendered_lines[2], "AX:+0.008g") == 0);
+    assert(strcmp(rendered_lines[4], "AY:-0.003g") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:08.37s") == 0);
 }
 
 static void test_running_updates_are_throttled_to_100_ms(void)
@@ -129,7 +174,7 @@ static void test_running_updates_are_throttled_to_100_ms(void)
 
     OLED_Task(100U);
     assert(update_count == (after_state_change + 1U));
-    assert(strcmp(rendered_lines[4], "TIME:08.42s") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:08.42s") == 0);
 }
 
 static void test_stop_screen_freezes_final_time(void)
@@ -146,13 +191,15 @@ static void test_stop_screen_freezes_final_time(void)
 
     assert(RaceTimer_GetState() == RACE_TIMER_STOPPED);
     assert(strcmp(rendered_lines[0], "STOPPED") == 0);
-    assert(strcmp(rendered_lines[4], "TIME:09.50s") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:09.50s") == 0);
     unsigned int stopped_updates = update_count;
 
     fake_time_ms = 30000U;
+    fake_accel_sample.x_g = 0.012f;
     OLED_Task(1000U);
-    assert(update_count == stopped_updates);
-    assert(strcmp(rendered_lines[4], "TIME:09.50s") == 0);
+    assert(update_count == (stopped_updates + 1U));
+    assert(strcmp(rendered_lines[2], "AX:+0.012g") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:09.50s") == 0);
 }
 
 static void test_finish_screen_uses_lap_outcome(void)
@@ -177,7 +224,7 @@ static void test_finish_screen_uses_lap_outcome(void)
     OLED_Task(21000U);
 
     assert(strcmp(rendered_lines[0], "FINISH") == 0);
-    assert(strcmp(rendered_lines[4], "TIME:20.00s") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:20.00s") == 0);
 }
 
 static void test_abort_screen_uses_lap_outcome(void)
@@ -194,7 +241,7 @@ static void test_abort_screen_uses_lap_outcome(void)
     OLED_Task(3500U);
 
     assert(strcmp(rendered_lines[0], "ABORT") == 0);
-    assert(strcmp(rendered_lines[4], "TIME:02.50s") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:02.50s") == 0);
 }
 
 static void test_timeout_screen_uses_lap_outcome(void)
@@ -215,18 +262,35 @@ static void test_timeout_screen_uses_lap_outcome(void)
     OLED_Task(36000U);
 
     assert(strcmp(rendered_lines[0], "TIMEOUT") == 0);
-    assert(strcmp(rendered_lines[4], "TIME:35.00s") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:35.00s") == 0);
+}
+
+static void test_refresh_wrapper_uses_current_time(void)
+{
+    reset_fakes(true);
+    OLED_TaskInit();
+    fake_time_ms = 1000U;
+    RaceTimer_Start();
+    fake_time_ms = 9370U;
+
+    OLED_RefreshTask();
+
+    assert(strcmp(rendered_lines[0], "RUNNING") == 0);
+    assert(strcmp(rendered_lines[6], "TIME:08.37s") == 0);
 }
 
 int main(void)
 {
     test_init_renders_idle_screen();
+    test_invalid_acceleration_renders_placeholders();
     test_failed_init_disables_task_writes();
+    test_idle_acceleration_updates_every_100_ms();
     test_running_screen_formats_centiseconds();
     test_running_updates_are_throttled_to_100_ms();
     test_stop_screen_freezes_final_time();
     test_finish_screen_uses_lap_outcome();
     test_abort_screen_uses_lap_outcome();
     test_timeout_screen_uses_lap_outcome();
+    test_refresh_wrapper_uses_current_time();
     return 0;
 }

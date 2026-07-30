@@ -1,6 +1,8 @@
 #ifndef _BSP_MPU6050_H_
 #define _BSP_MPU6050_H_
 
+#include <stdbool.h>
+
 #include "ti_msp_dl_config.h"
 #include "delay.h"
 #include "mpu6050_bus.h"
@@ -70,6 +72,7 @@ char MPU6050_ReadData(uint8_t addr, uint8_t regaddr,uint8_t num,uint8_t* Read);
 
 char MPU6050_Init(void);
 void MPU6050ReadGyro(short *gyroData);
+bool MPU6050ReadAccChecked(short *accData);
 void MPU6050ReadAcc(short *accData);
 float MPU6050_GetTemp(void);
 uint8_t MPU6050ReadID(void);

@@ -375,25 +375,27 @@ void MPU6050ReadGyro(short *gyroData)
  * Function return: None
  * Notes: None
 ******************************************************************/
-void MPU6050ReadAcc(short *accData)
+bool MPU6050ReadAccChecked(short *accData)
 {
-        uint8_t buf[6];
-        uint8_t reg = 0;
-        //MPU6050_ACC_OUT = MPU6050加速度数据寄存器地址
-        //加速度传感器数据输出寄存器总共由6个寄存器组成，
-        //输出X/Y/Z三个轴的加速度传感器值，高字节在前，低字节在后。
-				//MPU6050_ACC_OUT = MPU6050 acceleration data register address
-				//The acceleration sensor data output register consists of 6 registers in total,
-				//Output the acceleration sensor values ??of the three axes X/Y/Z, with the high byte in front and the low byte in the back.
-        reg = MPU6050_ReadData(0x68, MPU6050_ACC_OUT, 6, buf);
-        if( reg == 0)
-        {
-                accData[0] = (buf[0] << 8) | buf[1];
-                accData[1] = (buf[2] << 8) | buf[3];
-                accData[2] = (buf[4] << 8) | buf[5];
-        }
+    uint8_t buf[6];
+
+    if (accData == 0) {
+        return false;
+    }
+    if (MPU6050_ReadData(0x68, MPU6050_ACC_OUT, 6, buf) != 0) {
+        return false;
+    }
+
+    accData[0] = (short) (((uint16_t) buf[0] << 8) | buf[1]);
+    accData[1] = (short) (((uint16_t) buf[2] << 8) | buf[3]);
+    accData[2] = (short) (((uint16_t) buf[4] << 8) | buf[5]);
+    return true;
 }
 
+void MPU6050ReadAcc(short *accData)
+{
+    (void) MPU6050ReadAccChecked(accData);
+}
 /******************************************************************
  * 函 数 名 称：MPU6050_GetTemp
  * 函 数 说 明：读取MPU6050上的温度

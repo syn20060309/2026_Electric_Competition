@@ -11,6 +11,7 @@
 #include "lap_finish.h"
 #include "oled_task.h"
 #include "mpu6050_startup.h"
+#include "task.h"
 
 
 #define MOTOR_TYPE 5   //1:520电机 2:310电机 3:测速码盘TT电机 4:TT直流减速电机 5:L型520电机
@@ -49,11 +50,11 @@ int main(void)
         delay_ms(100);
     }
 
+    Scheduler_Init();
+
 	while(1)
 	{
-        uint32_t now = Get_Time();
-		Key_Handle();
-        OLED_Task(now);
+        Scheduler_Run();
 		if(g_LinePortal_flag)
 		{
 			LineWalking();

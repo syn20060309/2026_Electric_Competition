@@ -1,5 +1,8 @@
 #include "app_motor.h"
 
+uint8_t encoder_odometry_flag = 1U;
+float odometry_sum = 0.0f;
+
 static float speed_lr = 0;
 static float speed_fb = 0;
 static float speed_spin = 0;
@@ -116,3 +119,16 @@ void Motion_Car_Control(int16_t V_x, int16_t V_y, int16_t V_z)
 		
 }
 
+void Get_Odometry(void)
+{
+    if (encoder_odometry_flag)
+    {
+        float average_speed = 0;
+        Deal_data_real();
+        // odometry_sum += (Encoder_Offset[1] + Encoder_Offset[3])/2;
+        average_speed = ((g_Speed[1] + g_Speed[3]) / 2); // mm/s
+        odometry_sum += average_speed;                   // mm
+        // odometry_sum += ((Encoder_Offset[0] + Encoder_Offset[1] + Encoder_Offset[2] + Encoder_Offset[3]) / 4);
+        //	printf("%f  ",odometry_sum);
+    }
+}
