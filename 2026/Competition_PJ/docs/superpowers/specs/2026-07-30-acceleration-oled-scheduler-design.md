@@ -60,18 +60,32 @@ void Scheduler_Run(void);
 
 ```c
 Task tasks[] = {
-    {10,  0, Key_Handle},
-    {30,  0, MPU6050_AccelTask},
-    {100, 0, OLED_RefreshTask},
+    {10,   0, Key_Handle},
+    {30,   0, MPU6050_AccelTask},
+    {100,  0, OLED_RefreshTask},
+    {1000, 0, Get_Odometry},
 };
 ```
 
 - 按键保持 10ms 调度周期，以符合现有 20ms 消抖逻辑并避免漏掉短按。
 - MPU6050 每 30ms 采样一次。
 - OLED 每 100ms 刷新一次。
+- 里程任务每 1000ms 更新一次。`Get_Odometry()` 已由电机模块提供，
+  调度器不实现里程计算。
 - 调度器使用无符号时间差判断到期，正确处理 32 位毫秒计数回绕。
 - 任务执行后将 `last_call` 更新为当前时间，不连续补跑错过的周期。
-- `Get_Odometry` 不加入任务表，因为当前工程没有对应接口。
+
+电机模块公开以下接口和状态：
+
+```c
+extern uint8_t encoder_odometry_flag;
+extern float odometry_sum;
+
+void Get_Odometry(void);
+```
+
+`encoder_odometry_flag` 默认值为 `1U`，`odometry_sum` 默认值为
+`0.0f`。当前实现按 1 秒任务周期把平均速度（mm/s）累加为里程（mm）。
 
 ## 主循环
 
@@ -98,6 +112,7 @@ while (1)
 - MPU6050 加速度任务：只负责一次三轴采样、单位换算和发布最新快照。
 - MPU6050 驱动：执行一次连续六字节读取并返回明确的成功或失败结果。
 - OLED 任务：读取加速度快照、比赛计时和比赛状态，生成四行页面。
+- 电机模块：实现 `Get_Odometry()` 并保存里程开关和累计里程。
 - `empty.c`：初始化现有模块并在主循环调用 `Scheduler_Run()` 与
   `LineWalking()`。
 
@@ -111,10 +126,10 @@ while (1)
 ## 验证
 
 - 主机测试验证调度周期、首次触发行为以及 32 位时间回绕。
+- 调度器测试验证 `Get_Odometry()` 每 1000ms 调用一次。
 - 主机测试验证一次采样同时更新 X/Y、正负数换算和读取失败状态。
 - 扩展 OLED测试，验证 `IDLE`、`RUNNING`、`STOPPED`、`FINISH`、
   `ABORT` 和 `TIMEOUT` 页面同时包含正确的加速度与提示或时间。
 - 使用 SysConfig CLI确认引脚配置未变化。
 - 使用 TI Arm Clang执行强制全量编译，修复所有新增错误和警告。
 - 实物验证静止零偏、显示刷新稳定性，以及巡线过程中未出现响应速度下降。
-
