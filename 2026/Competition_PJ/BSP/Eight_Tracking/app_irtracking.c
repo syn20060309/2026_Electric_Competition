@@ -10,7 +10,7 @@
 #define IRTrack_Trun_KP (250)
 #define IRTrack_Trun_KI (0.2) 
 #define IRTrack_Trun_KD (2) 
-#define IRR_SPEED 			  400  //巡线速度   Patrol speed
+#define IRR_SPEED 			  350  //巡线速度   Patrol speed
 #define CHANGE_THRESHOLD 3
 #define IR_I2C_TIMEOUT_MS 5U
 #define IR_I2C_LOOP_GUARD 100000U

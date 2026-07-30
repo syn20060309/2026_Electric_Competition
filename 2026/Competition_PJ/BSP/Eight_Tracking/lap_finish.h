@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define FINISH_MIN_TIME_MS              15500U
+#define FINISH_MIN_TIME_MS              16500U
 #define START_LINE_CLEAR_CONFIRM_MS       100U
 #define FINISH_ACTIVE_COUNT_THRESHOLD       6U
 #define FINISH_CONFIRM_SAMPLE_COUNT          2U
