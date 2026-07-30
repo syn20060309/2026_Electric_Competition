@@ -166,18 +166,18 @@ static void test_finish_screen_uses_lap_outcome(void)
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_Update(1200U, 200U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(16000U, 15000U, true, 0xFFU) ==
+    assert(LapFinish_Update(21000U, 20000U, true, 0xFFU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(16001U, 15001U, true, 0x7FU) ==
+    assert(LapFinish_Update(21001U, 20001U, true, 0x7FU) ==
         LAP_FINISH_EVENT_FINISH);
-    fake_time_ms = 16001U;
+    fake_time_ms = 21001U;
     RaceTimer_Stop();
     LapFinish_MarkFinished();
 
-    OLED_Task(16000U);
+    OLED_Task(21000U);
 
     assert(strcmp(rendered_lines[0], "FINISH") == 0);
-    assert(strcmp(rendered_lines[4], "TIME:15.00s") == 0);
+    assert(strcmp(rendered_lines[4], "TIME:20.00s") == 0);
 }
 
 static void test_abort_screen_uses_lap_outcome(void)

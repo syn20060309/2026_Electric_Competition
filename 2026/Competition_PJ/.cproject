@@ -50,6 +50,8 @@
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/Key"/>
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/LED"/>
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/Motor"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/BSP/MPU6050"/>
+                                    <listOptionValue value="${PROJECT_ROOT}/BSP/eMPL"/>
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/OLED"/>
                                     <listOptionValue value="${PROJECT_ROOT}/BSP/Timer"/>
                                 </option>

@@ -54,18 +54,18 @@ static void test_finish_stops_motor_timer_and_latches_finish(void)
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_Update(200U, 200U, true, 0x1FU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(15000U, 15000U, true, 0xFFU) ==
+    assert(LapFinish_Update(20000U, 20000U, true, 0xFFU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(15001U, 15001U, true, 0x3FU) ==
+    assert(LapFinish_Update(20001U, 20001U, true, 0x3FU) ==
         LAP_FINISH_EVENT_FINISH);
-    fake_time_ms = 15001U;
+    fake_time_ms = 20001U;
 
     Car_FinishStop();
 
     assert(g_LinePortal_flag == 0);
     assert(stop_command_count == 1U);
     assert(RaceTimer_GetState() == RACE_TIMER_STOPPED);
-    assert(RaceTimer_GetElapsedMs() == 15001U);
+    assert(RaceTimer_GetElapsedMs() == 20001U);
     assert(LapFinish_GetState() == LAP_STATE_FINISHED);
 }
 

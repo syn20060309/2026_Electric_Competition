@@ -10,6 +10,7 @@
 #include "buzzer.h"
 #include "lap_finish.h"
 #include "oled_task.h"
+#include "mpu6050_startup.h"
 
 
 #define MOTOR_TYPE 5   //1:520电机 2:310电机 3:测速码盘TT电机 4:TT直流减速电机 5:L型520电机
@@ -20,6 +21,8 @@ int g_LinePortal_flag = 0;
 int main(void)
 {
     USART_Init();//打印串口初始化、四路电机通信串口初始化   Print serial port initialization, four-channel motor communication serial port initialization
+
+    MPU6050_Startup();
 
     //设置电机类型    Set motor type
     Contrl_Pwm(0,0,0,0);
