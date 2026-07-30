@@ -8,8 +8,8 @@ PA0/PA1 的硬件开漏 GPIO，解决总线释放后无法可靠拉高、读取�
 
 ## 引脚与电气配置
 
-- PA0：MPU6050 SCL。
-- PA1：MPU6050 SDA。
+- PA1：MPU6050 SCL。
+- PA0：MPU6050 SDA。
 - 两个引脚在 `empty.syscfg` 中配置为 `5V Tolerant Open Drain`，
   即 `ioStructure = "OD"`。
 - 两个引脚的方向为输出，初始值为 `SET`，上电后总线处于释放状态。
@@ -85,4 +85,3 @@ SysConfig生成的GPIO资源：
 - TI Arm Clang强制全量编译和链接必须无新增错误或警告。
 - 实物上电后测量SCL/SDA空闲电压约为3.3V。
 - 旋转模块90°时，对应X或Y轴应显示接近正负1.000g。
-
