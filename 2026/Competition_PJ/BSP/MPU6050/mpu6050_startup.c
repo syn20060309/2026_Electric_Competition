@@ -8,11 +8,7 @@
 
 void MPU6050_Startup(void)
 {
-    /* MPU6050 initialization */
-    (void) MPU6050_Init();
-
-    /* DMP initialization */
-    while (mpu_dmp_init() != 0U) {
+    while ((MPU6050_Init() != 0) || (mpu_dmp_init() != 0U)) {
         printf("dmp error\r\n");
         delay_ms(200U);
     }

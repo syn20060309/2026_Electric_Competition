@@ -5,19 +5,13 @@
 
 #include "ti_msp_dl_config.h"
 #include "delay.h"
-#include "mpu6050_bus.h"
 
-//设置SDA输出模式 Set SDA output mode
-/*
- * PA24/PA25 are standard GPIOs, so I2C open-drain behavior is implemented
- * by driving low and releasing the output driver for a high level.
- */
+//PA1/PA0 use hardware open-drain GPIO for software I2C.
 #define SDA_OUT()   ((void) 0)
-#define SDA_IN()    MPU6050_SDA_Release()
-#define SDA_GET()   MPU6050_SDA_Read()
-#define SDA(x)      ((x) ? MPU6050_SDA_Release() : MPU6050_SDA_Low())
-#define SCL(x)      ((x) ? MPU6050_SCL_Release() : MPU6050_SCL_Low())
-
+#define SDA_IN()    ((void) 0)
+#define SDA_GET()   ((((DL_GPIO_readPins(MPU6050_PORT, MPU6050_SDA_PIN) & MPU6050_SDA_PIN) != 0U)) ? 1U : 0U)
+#define SDA(x)      ((x) ? DL_GPIO_setPins(MPU6050_PORT, MPU6050_SDA_PIN) : DL_GPIO_clearPins(MPU6050_PORT, MPU6050_SDA_PIN))
+#define SCL(x)      ((x) ? DL_GPIO_setPins(MPU6050_PORT, MPU6050_SCL_PIN) : DL_GPIO_clearPins(MPU6050_PORT, MPU6050_SCL_PIN))
 
 //MPU6050的AD0是IIC地址引脚，接地则IIC地址为0x68,接VCC则IIC地址为0x69
 //AD0 of MPU6050 is the IIC address pin. If it is grounded, the IIC address is 0x68. If it is connected to VCC, the IIC address is 0x69.

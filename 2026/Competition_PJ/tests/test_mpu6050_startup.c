@@ -8,13 +8,20 @@ static unsigned int mpu_init_calls;
 static unsigned int dmp_init_calls;
 static unsigned int delay_calls;
 static uint32_t delay_values[4];
+static char mpu_results[4];
+static size_t mpu_result_count;
 static uint8_t dmp_results[4];
 static size_t dmp_result_count;
 
 char MPU6050_Init(void)
 {
+    char result = 0;
+
+    if (mpu_init_calls < mpu_result_count) {
+        result = mpu_results[mpu_init_calls];
+    }
     mpu_init_calls++;
-    return 0;
+    return result;
 }
 
 uint8_t mpu_dmp_init(void)
@@ -39,6 +46,7 @@ static void reset_fakes(void)
     mpu_init_calls = 0U;
     dmp_init_calls = 0U;
     delay_calls = 0U;
+    mpu_result_count = 0U;
     dmp_result_count = 0U;
 }
 
@@ -55,7 +63,26 @@ static void test_initializes_mpu_once_and_accepts_first_dmp_success(void)
     assert(delay_calls == 0U);
 }
 
-static void test_retries_dmp_with_200_ms_delay_until_success(void)
+static void test_retries_complete_initialization_after_mpu_failures(void)
+{
+    reset_fakes();
+    mpu_results[0] = 1;
+    mpu_results[1] = 1;
+    mpu_results[2] = 0;
+    mpu_result_count = 3U;
+    dmp_results[0] = 0U;
+    dmp_result_count = 1U;
+
+    MPU6050_Startup();
+
+    assert(mpu_init_calls == 3U);
+    assert(dmp_init_calls == 1U);
+    assert(delay_calls == 2U);
+    assert(delay_values[0] == 200U);
+    assert(delay_values[1] == 200U);
+}
+
+static void test_retries_complete_initialization_after_dmp_failures(void)
 {
     reset_fakes();
     dmp_results[0] = 1U;
@@ -65,7 +92,7 @@ static void test_retries_dmp_with_200_ms_delay_until_success(void)
 
     MPU6050_Startup();
 
-    assert(mpu_init_calls == 1U);
+    assert(mpu_init_calls == 3U);
     assert(dmp_init_calls == 3U);
     assert(delay_calls == 2U);
     assert(delay_values[0] == 200U);
@@ -75,6 +102,7 @@ static void test_retries_dmp_with_200_ms_delay_until_success(void)
 int main(void)
 {
     test_initializes_mpu_once_and_accepts_first_dmp_success();
-    test_retries_dmp_with_200_ms_delay_until_success();
+    test_retries_complete_initialization_after_mpu_failures();
+    test_retries_complete_initialization_after_dmp_failures();
     return 0;
 }

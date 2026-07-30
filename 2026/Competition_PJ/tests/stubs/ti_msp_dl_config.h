@@ -12,8 +12,13 @@ typedef struct {
 extern GPIO_Regs test_gpio_a;
 
 #define MPU6050_PORT       (&test_gpio_a)
-#define MPU6050_SCL_PIN    (1UL << 24)
-#define MPU6050_SDA_PIN    (1UL << 25)
+#define MPU6050_SCL_PIN    (1UL << 1)
+#define MPU6050_SDA_PIN    (1UL << 0)
+
+static inline void DL_GPIO_setPins(GPIO_Regs *gpio, uint32_t pins)
+{
+    gpio->output_latch |= pins;
+}
 
 static inline void DL_GPIO_clearPins(GPIO_Regs *gpio, uint32_t pins)
 {

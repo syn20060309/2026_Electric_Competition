@@ -60,12 +60,12 @@ GPIO3.$name                          = "MPU6050";
 GPIO3.associatedPins.create(2);
 GPIO3.associatedPins[0].$name        = "SCL";
 GPIO3.associatedPins[0].initialValue = "SET";
-GPIO3.associatedPins[0].ioStructure  = "SD";
-GPIO3.associatedPins[0].pin.$assign  = "PA24";
+GPIO3.associatedPins[0].ioStructure  = "OD";
+GPIO3.associatedPins[0].pin.$assign  = "PA1";
 GPIO3.associatedPins[1].$name        = "SDA";
 GPIO3.associatedPins[1].initialValue = "SET";
-GPIO3.associatedPins[1].ioStructure  = "SD";
-GPIO3.associatedPins[1].pin.$assign  = "PA25";
+GPIO3.associatedPins[1].ioStructure  = "OD";
+GPIO3.associatedPins[1].pin.$assign  = "PA0";
 
 I2C1.$name                             = "Sensor";
 I2C1.basicEnableController             = true;

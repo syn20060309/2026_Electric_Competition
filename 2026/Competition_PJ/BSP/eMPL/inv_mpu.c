@@ -2948,6 +2948,7 @@ u8 mpu_dmp_init(void)
 	u8 res=0;
     
     res = mpu_init();
+    if (res != 0) return 10;
 //    printf("res = %d\r\n",res);
 	if(res==0)	//≥ı ºªØMPU6050  Initialize MPU6050
 	{	 

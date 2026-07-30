@@ -467,8 +467,8 @@ char MPU6050_Init(void)
     uint8_t data;
 
     SDA_OUT();
-    MPU6050_SCL_Release();
-    MPU6050_SDA_Release();
+    SCL(1);
+    SDA(1);
     delay_ms(10);
 
     data = 0x80U;
