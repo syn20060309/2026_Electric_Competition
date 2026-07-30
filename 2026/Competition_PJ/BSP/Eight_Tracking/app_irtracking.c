@@ -7,7 +7,7 @@
 #include "tracking_i2c_policy.h"
 #include "tracking_sample.h"
 
-#define IRTrack_Trun_KP (300)
+#define IRTrack_Trun_KP (250)
 #define IRTrack_Trun_KI (0.2) 
 #define IRTrack_Trun_KD (2) 
 #define IRR_SPEED 			  400  //Ñ²ÏßËÙ¶È   Patrol speed
