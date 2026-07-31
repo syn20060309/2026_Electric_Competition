@@ -2,6 +2,7 @@
 
 #include <stdint.h>
 
+#include "BSP/Mode/car_mode.h"
 #include "lap_finish.h"
 #include "race_timer.h"
 
@@ -16,12 +17,17 @@ static void Car_Stop(void)
     RaceTimer_Stop();
 }
 
-void Car_RaceStart(uint32_t now_ms)
+bool Car_StartSelectedMode(uint32_t now_ms)
 {
+    if (!CarMode_IsSelected()) {
+        return false;
+    }
+
     LapFinish_Reset();
     RaceTimer_Start();
     LapFinish_Start(now_ms);
     g_LinePortal_flag = 1;
+    return true;
 }
 
 void Car_FinishStop(void)

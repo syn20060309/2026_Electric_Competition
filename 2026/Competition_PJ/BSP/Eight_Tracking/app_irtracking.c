@@ -1,5 +1,6 @@
 #include "app_irtracking.h"
 
+#include "BSP/Mode/car_mode.h"
 #include "lap_finish.h"
 #include "race_control.h"
 #include "race_timer.h"
@@ -10,7 +11,6 @@
 #define IRTrack_Trun_KP (250)
 #define IRTrack_Trun_KI (0.2) 
 #define IRTrack_Trun_KD (2) 
-#define IRR_SPEED 			  335  //巡线速度   Patrol speed
 #define CHANGE_THRESHOLD 3
 #define IR_I2C_TIMEOUT_MS 5U
 #define IR_I2C_LOOP_GUARD 100000U
@@ -301,6 +301,7 @@ void LineWalking(void)
 {
 	static int8_t err = 0;
 	static u8 x1,x2,x3,x4,x5,x6,x7,x8;
+    uint16_t current_speed;
     bool sensor_valid;
     uint8_t active_mask = 0U;
     uint32_t now_ms;
@@ -399,8 +400,13 @@ void LineWalking(void)
 
 	//剩下的就保持上一个状态	The rest will remain in the previous state
 	pid_output_IRR = (int)(PID_IR_Calc(err));
+	current_speed = CarMode_GetSpeed();
+	if (current_speed == 0U) {
+		Contrl_Pwm(0, 0, 0, 0);
+		return;
+	}
 
-	Motion_Car_Control(IRR_SPEED, 0, pid_output_IRR);
+	Motion_Car_Control((int16_t) current_speed, 0, pid_output_IRR);
 
 }
 

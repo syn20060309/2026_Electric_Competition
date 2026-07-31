@@ -1,6 +1,6 @@
 #include "key.h"
 
-#include "lap_finish.h"
+#include "BSP/Mode/car_mode.h"
 #include "race_control.h"
 #include "race_timer.h"
 
@@ -77,6 +77,32 @@ KeyEvent Key_Scan(Key_t* key, uint32_t currentTime, uint32_t longPressThreshold)
     return KEY_EVENT_NONE;  // Ĭ�����¼� / Default: no event
 }
 
+void Key_ProcessEvent(KeyEvent event, uint32_t currentTime)
+{
+    if (event == KEY_EVENT_SHORT) {
+        if (!RaceTimer_IsRunning() && CarMode_IsSelected()) {
+            (void) Car_StartSelectedMode(currentTime);
+        }
+        return;
+    }
+
+    if (event != KEY_EVENT_LONG) {
+        return;
+    }
+
+    if (RaceTimer_IsRunning()) {
+        Car_AbortStop();
+        return;
+    }
+
+    CarMode_SelectNext();
+    if (CarMode_GetCurrent() == CAR_MODE_QUESTION_2) {
+        Buzzer_NotifyQ2Mode();
+    } else {
+        Buzzer_NotifyBallMode();
+    }
+}
+
 void Key_Handle(void)
 {
     int16_t LongPressThreshold = 700;// ����ɨ��ʱ��������ֵ��500ms    Threshold for long press during key scanning: 500ms
@@ -89,30 +115,7 @@ void Key_Handle(void)
 
         KeyEvent event = Key_Scan(&key1, currentTick, LongPressThreshold);
 
-        switch (event) {
-            case KEY_EVENT_SHORT:
-#if ENABLE_K1_MANUAL_STOP_DEBUG
-                if (RaceTimer_IsRunning()) {
-                    Car_AbortStop();
-                } else {
-                    Car_RaceStart(currentTick);
-                }
-#else
-                if (!RaceTimer_IsRunning()) {
-                    Car_RaceStart(currentTick);
-                }
-#endif
-                break;
-            case KEY_EVENT_LONG:
-#if ENABLE_K1_EMERGENCY_STOP
-                if (RaceTimer_IsRunning()) {
-                    Car_AbortStop();
-                }
-#endif
-                break;
-            default:
-                break;
-        }
+        Key_ProcessEvent(event, currentTick);
     }
 }
 

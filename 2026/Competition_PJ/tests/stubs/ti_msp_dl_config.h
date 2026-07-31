@@ -11,10 +11,33 @@ typedef struct {
 
 extern GPIO_Regs test_gpio_a;
 
+typedef struct {
+    uint32_t compare_value;
+    uint32_t start_count;
+} Timer_Regs;
+
+extern Timer_Regs test_buzzer_timer;
+
 #define MPU6050_PORT       (&test_gpio_a)
 #define MPU6050_SCL_PIN    (1UL << 1)
 #define MPU6050_SDA_PIN    (1UL << 0)
 #define MPU6050_SDA_IOMUX  (1U)
+#define KEY_PORT            (&test_gpio_a)
+#define KEY_K1_PIN          (1UL << 2)
+#define BUZZER_INST          (&test_buzzer_timer)
+#define GPIO_BUZZER_C3_IDX   (3U)
+
+static inline void DL_Timer_startCounter(Timer_Regs *timer)
+{
+    timer->start_count++;
+}
+
+static inline void DL_TimerA_setCaptureCompareValue(
+    Timer_Regs *timer, uint32_t value, uint32_t index)
+{
+    (void) index;
+    timer->compare_value = value;
+}
 
 static inline void DL_GPIO_initDigitalOutput(uint32_t iomux)
 {

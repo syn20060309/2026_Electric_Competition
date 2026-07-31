@@ -30,6 +30,7 @@ typedef struct {
 } Key_t;
 
 KeyEvent Key_Scan(Key_t* key, uint32_t currentTime, uint32_t longPressThreshold);
+void Key_ProcessEvent(KeyEvent event, uint32_t currentTime);
 void Key_Handle(void);
 
 #endif

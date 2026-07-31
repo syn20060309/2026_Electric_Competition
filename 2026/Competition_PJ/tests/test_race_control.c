@@ -1,6 +1,8 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdint.h>
 
+#include "car_mode.h"
 #include "lap_finish.h"
 #include "race_control.h"
 #include "race_timer.h"
@@ -31,14 +33,27 @@ static void reset_fakes(void)
     stop_command_count = 0U;
     RaceTimer_Reset();
     LapFinish_Reset();
+    CarMode_Init();
 }
 
-static void test_start_resets_and_starts_one_race(void)
+static void test_none_mode_cannot_start(void)
 {
     reset_fakes();
+
+    assert(!Car_StartSelectedMode(500U));
+
+    assert(g_LinePortal_flag == 0);
+    assert(RaceTimer_GetState() == RACE_TIMER_IDLE);
+    assert(LapFinish_GetState() == LAP_STATE_IDLE);
+}
+
+static void test_selected_mode_resets_and_starts_one_race(void)
+{
+    reset_fakes();
+    CarMode_SelectNext();
     fake_time_ms = 500U;
 
-    Car_RaceStart(fake_time_ms);
+    assert(Car_StartSelectedMode(fake_time_ms));
 
     assert(g_LinePortal_flag == 1);
     assert(RaceTimer_GetState() == RACE_TIMER_RUNNING);
@@ -49,10 +64,11 @@ static void test_start_resets_and_starts_one_race(void)
 static void test_finish_stops_motor_timer_and_latches_finish(void)
 {
     reset_fakes();
-    Car_RaceStart(0U);
-    assert(LapFinish_Update(100U, 100U, true, 0x1FU) ==
+    CarMode_SelectNext();
+    assert(Car_StartSelectedMode(0U));
+    assert(LapFinish_Update(100U, 100U, true, 0x0FU) ==
         LAP_FINISH_EVENT_NONE);
-    assert(LapFinish_Update(200U, 200U, true, 0x1FU) ==
+    assert(LapFinish_Update(200U, 200U, true, 0x0FU) ==
         LAP_FINISH_EVENT_NONE);
     assert(LapFinish_Update(20000U, 20000U, true, 0xFFU) ==
         LAP_FINISH_EVENT_NONE);
@@ -67,12 +83,14 @@ static void test_finish_stops_motor_timer_and_latches_finish(void)
     assert(RaceTimer_GetState() == RACE_TIMER_STOPPED);
     assert(RaceTimer_GetElapsedMs() == 20001U);
     assert(LapFinish_GetState() == LAP_STATE_FINISHED);
+    assert(CarMode_GetCurrent() == CAR_MODE_QUESTION_2);
 }
 
 static void test_abort_is_not_marked_as_finish(void)
 {
     reset_fakes();
-    Car_RaceStart(0U);
+    CarMode_SelectNext();
+    assert(Car_StartSelectedMode(0U));
     fake_time_ms = 2500U;
 
     Car_AbortStop();
@@ -81,12 +99,15 @@ static void test_abort_is_not_marked_as_finish(void)
     assert(stop_command_count == 1U);
     assert(RaceTimer_GetElapsedMs() == 2500U);
     assert(LapFinish_GetState() == LAP_STATE_ABORTED);
+    assert(CarMode_GetCurrent() == CAR_MODE_QUESTION_2);
 }
 
 static void test_timeout_is_not_marked_as_finish(void)
 {
     reset_fakes();
-    Car_RaceStart(0U);
+    CarMode_SelectNext();
+    CarMode_SelectNext();
+    assert(Car_StartSelectedMode(0U));
     assert(LapFinish_CheckTimeout(35000U));
     fake_time_ms = 35000U;
 
@@ -97,11 +118,13 @@ static void test_timeout_is_not_marked_as_finish(void)
     assert(RaceTimer_GetElapsedMs() == 35000U);
     assert(LapFinish_GetState() == LAP_STATE_TIMEOUT);
     assert(!LapFinish_IsFinished());
+    assert(CarMode_GetCurrent() == CAR_MODE_BALL_CONTROL);
 }
 
 int main(void)
 {
-    test_start_resets_and_starts_one_race();
+    test_none_mode_cannot_start();
+    test_selected_mode_resets_and_starts_one_race();
     test_finish_stops_motor_timer_and_latches_finish();
     test_abort_is_not_marked_as_finish();
     test_timeout_is_not_marked_as_finish();

@@ -12,6 +12,7 @@
 #include "oled_task.h"
 #include "mpu6050_startup.h"
 #include "task.h"
+#include "BSP/Mode/car_mode.h"
 
 
 #define MOTOR_TYPE 5   //1:520电机 2:310电机 3:测速码盘TT电机 4:TT直流减速电机 5:L型520电机
@@ -39,18 +40,11 @@ int main(void)
     //定时器开始计时   Timer start
     DL_TimerA_startCounter(TIMER_0_INST);
 
+    CarMode_Init();
     LapFinish_Init();
     OLED_TaskInit();
-
-    int i = 0;
-    for(i=0;i<4;i++)
-    {
-        LED2_Toggle();
-        Buzzer_Toggle();
-        delay_ms(100);
-    }
-
     Scheduler_Init();
+    Buzzer_NotifyInitComplete();
 
 	while(1)
 	{

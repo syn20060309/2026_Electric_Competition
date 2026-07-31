@@ -1,0 +1,4 @@
+#ifndef TEST_APP_MOTOR_USART_H
+#define TEST_APP_MOTOR_USART_H
+
+#endif
